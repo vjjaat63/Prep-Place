@@ -49,6 +49,20 @@ function CreateSessionModal({
             </select>
           </div>
 
+          {/* PASSWORD (OPTIONAL) */}
+          <div className="space-y-2">
+            <label className="label">
+              <span className="label-text font-semibold">Set Password (Optional)</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Leave blank for public session"
+              className="input input-bordered w-full"
+              value={roomConfig.password || ""}
+              onChange={(e) => setRoomConfig({ ...roomConfig, password: e.target.value })}
+            />
+          </div>
+
           {/* ROOM SUMMARY */}
           {roomConfig.problem && (
             <div className="alert alert-success">

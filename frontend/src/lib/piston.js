@@ -1,12 +1,4 @@
-// Piston API is a service for code execution
-
-const PISTON_API = "https://emkc.org/api/v2/piston";
-
-const LANGUAGE_VERSIONS = {
-  javascript: { language: "javascript", version: "18.15.0" },
-  python: { language: "python", version: "3.10.0" },
-  java: { language: "java", version: "15.0.2" },
-};
+import axiosInstance from "./axios.js";
 
 /**
  * @param {string} language - programming language
@@ -15,70 +7,30 @@ const LANGUAGE_VERSIONS = {
  */
 export async function executeCode(language, code) {
   try {
-    const languageConfig = LANGUAGE_VERSIONS[language];
-
-    if (!languageConfig) {
-      return {
-        success: false,
-        error: `Unsupported language: ${language}`,
-      };
-    }
-
-    const response = await fetch(`${PISTON_API}/execute`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        language: languageConfig.language,
-        version: languageConfig.version,
-        files: [
-          {
-            name: `main.${getFileExtension(language)}`,
-            content: code,
-          },
-        ],
-      }),
+    const response = await axiosInstance.post("/execute", {
+      language,
+      code,
     });
 
-    if (!response.ok) {
+    const data = response.data;
+
+    // JDoodle returns 200 statusCode in the JSON body when execution is successful
+    if (data.statusCode !== 200) {
       return {
         success: false,
-        error: `HTTP error! status: ${response.status}`,
-      };
-    }
-
-    const data = await response.json();
-
-    const output = data.run.output || "";
-    const stderr = data.run.stderr || "";
-
-    if (stderr) {
-      return {
-        success: false,
-        output: output,
-        error: stderr,
+        output: data.output || "",
+        error: data.error || `Execution failed with status: ${data.statusCode}`,
       };
     }
 
     return {
       success: true,
-      output: output || "No output",
+      output: data.output || "No output",
     };
   } catch (error) {
     return {
       success: false,
-      error: `Failed to execute code: ${error.message}`,
+      error: error.response?.data?.error || `Failed to execute code: ${error.message}`,
     };
   }
-}
-
-function getFileExtension(language) {
-  const extensions = {
-    javascript: "js",
-    python: "py",
-    java: "java",
-  };
-
-  return extensions[language] || "txt";
 }

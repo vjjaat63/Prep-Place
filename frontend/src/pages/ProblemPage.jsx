@@ -7,7 +7,9 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import ProblemDescription from "../components/ProblemDescription";
 import OutputPanel from "../components/OutputPanel";
 import CodeEditorPanel from "../components/CodeEditorPanel";
+import AiReviewPanel from "../components/AiReviewPanel";
 import { executeCode } from "../lib/piston";
+import axiosInstance from "../lib/axios";
 
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
@@ -21,6 +23,9 @@ function ProblemPage() {
   const [code, setCode] = useState(PROBLEMS[currentProblemId].starterCode.javascript);
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [aiReview, setAiReview] = useState(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const currentProblem = PROBLEMS[currentProblemId];
 
@@ -30,6 +35,8 @@ function ProblemPage() {
       setCurrentProblemId(id);
       setCode(PROBLEMS[id].starterCode[selectedLanguage]);
       setOutput(null);
+      setAiReview(null);
+      setIsSuccess(false);
     }
   }, [id, selectedLanguage]);
 
@@ -38,6 +45,7 @@ function ProblemPage() {
     setSelectedLanguage(newLang);
     setCode(currentProblem.starterCode[newLang]);
     setOutput(null);
+    setAiReview(null);
   };
 
   const handleProblemChange = (newProblemId) => navigate(`/problem/${newProblemId}`);
@@ -84,6 +92,7 @@ function ProblemPage() {
   const handleRunCode = async () => {
     setIsRunning(true);
     setOutput(null);
+    setAiReview(null);
 
     const result = await executeCode(selectedLanguage, code);
     setOutput(result);
@@ -96,10 +105,33 @@ function ProblemPage() {
       const testsPassed = checkIfTestsPassed(result.output, expectedOutput);
 
       if (testsPassed) {
+        setIsSuccess(true);
         triggerConfetti();
         toast.success("All tests passed! Great job!");
       } else {
+        setIsSuccess(false);
         toast.error("Tests failed. Check your output!");
+      }
+
+      // Fetch AI Review
+      setIsAiLoading(true);
+      try {
+        const aiRes = await axiosInstance.post("/ai/review", {
+          language: selectedLanguage,
+          code,
+          problemTitle: currentProblem.title,
+          problemDesc: currentProblem.description,
+          output: result.output,
+          passed: testsPassed ? 1 : 0,
+          failed: testsPassed ? 0 : 1,
+        });
+        setAiReview(aiRes.data.review);
+      } catch (error) {
+        if (error.response?.data?.limitReached) {
+          toast(error.response.data.message, { icon: "👑" });
+        }
+      } finally {
+        setIsAiLoading(false);
       }
     } else {
       toast.error("Code execution failed!");
@@ -133,6 +165,7 @@ function ProblemPage() {
                   selectedLanguage={selectedLanguage}
                   code={code}
                   isRunning={isRunning}
+                  isSuccess={isSuccess}
                   onLanguageChange={handleLanguageChange}
                   onCodeChange={setCode}
                   onRunCode={handleRunCode}
@@ -141,10 +174,21 @@ function ProblemPage() {
 
               <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
 
-              {/* Bottom panel - Output Panel*/}
-
+              {/* Bottom panel - Output Panel & AI Review */}
               <Panel defaultSize={30} minSize={30}>
-                <OutputPanel output={output} />
+                <PanelGroup direction="vertical">
+                  <Panel defaultSize={aiReview || isAiLoading ? 50 : 100}>
+                    <OutputPanel output={output} />
+                  </Panel>
+                  {(aiReview || isAiLoading) && (
+                    <>
+                      <PanelResizeHandle className="h-2 bg-base-300 hover:bg-secondary transition-colors cursor-row-resize" />
+                      <Panel defaultSize={50} minSize={20}>
+                        <AiReviewPanel review={aiReview} isLoading={isAiLoading} />
+                      </Panel>
+                    </>
+                  )}
+                </PanelGroup>
               </Panel>
             </PanelGroup>
           </Panel>

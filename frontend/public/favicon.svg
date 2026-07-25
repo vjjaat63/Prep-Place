@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <defs>
+    <linearGradient id="primary-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1eb854" />
+      <stop offset="100%" stop-color="#15823b" />
+    </linearGradient>
+  </defs>
+  <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" stroke="url(#primary-gradient)" fill="url(#primary-gradient)" fill-opacity="0.2" />
+  <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" stroke="url(#primary-gradient)" fill="url(#primary-gradient)" fill-opacity="0.2" />
+  <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" stroke="url(#primary-gradient)" />
+  <path d="M17.599 6.5A3 3 0 0 0 14 6" stroke="url(#primary-gradient)" />
+  <path d="M6.401 6.5A3 3 0 0 1 10 6" stroke="url(#primary-gradient)" />
+  <path d="M3.4 10.533a5 5 0 0 1 7.153 3.676" stroke="url(#primary-gradient)" />
+  <path d="M20.6 10.533a5 5 0 0 0-7.153 3.676" stroke="url(#primary-gradient)" />
+</svg>

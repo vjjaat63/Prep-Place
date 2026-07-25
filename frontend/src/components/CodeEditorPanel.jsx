@@ -1,25 +1,60 @@
 import Editor from "@monaco-editor/react";
-import { Loader2Icon, PlayIcon } from "lucide-react";
+import { Loader2Icon, PlayIcon, TimerIcon } from "lucide-react";
+import { useState, useEffect } from "react";
 import { LANGUAGE_CONFIG } from "../data/problems";
 
 function CodeEditorPanel({
   selectedLanguage,
   code,
   isRunning,
+  isSuccess,
   onLanguageChange,
   onCodeChange,
   onRunCode,
 }) {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    let timer;
+    if (!isSuccess) {
+      timer = setInterval(() => {
+        setSeconds((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isSuccess]);
+
+  const formatTime = (totalSeconds) => {
+    const m = Math.floor(totalSeconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = (totalSeconds % 60)
+      .toString()
+      .padStart(2, "0");
+
+    return `${m}:${s}`;
+  };
+
   return (
     <div className="h-full bg-base-300 flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 bg-base-100 border-t border-base-300">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 bg-base-100 border-b border-base-300">
         <div className="flex items-center gap-3">
-          <img
-            src={LANGUAGE_CONFIG[selectedLanguage].icon}
-            alt={LANGUAGE_CONFIG[selectedLanguage].name}
-            className="size-6"
-          />
-          <select className="select select-sm" value={selectedLanguage} onChange={onLanguageChange}>
+          {LANGUAGE_CONFIG[selectedLanguage].icon && (
+            <img
+              src={LANGUAGE_CONFIG[selectedLanguage].icon}
+              alt={LANGUAGE_CONFIG[selectedLanguage].name}
+              className="size-6"
+            />
+          )}
+
+          <select
+            className="select select-sm"
+            value={selectedLanguage}
+            onChange={onLanguageChange}
+          >
             {Object.entries(LANGUAGE_CONFIG).map(([key, lang]) => (
               <option key={key} value={key}>
                 {lang.name}
@@ -28,24 +63,36 @@ function CodeEditorPanel({
           </select>
         </div>
 
-        <button className="btn btn-primary btn-sm gap-2" disabled={isRunning} onClick={onRunCode}>
-          {isRunning ? (
-            <>
-              <Loader2Icon className="size-4 animate-spin" />
-              Running...
-            </>
-          ) : (
-            <>
-              <PlayIcon className="size-4" />
-              Run Code
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-4">
+          <div className={`flex items-center gap-2 font-mono ${isSuccess ? 'text-success font-bold' : 'text-base-content/70'}`}>
+            <TimerIcon className={`size-4 ${isSuccess ? 'animate-bounce' : ''}`} />
+            {formatTime(seconds)}
+          </div>
+
+          <button
+            className="btn btn-primary btn-sm gap-2"
+            disabled={isRunning}
+            onClick={onRunCode}
+          >
+            {isRunning ? (
+              <>
+                <Loader2Icon className="size-4 animate-spin" />
+                Running...
+              </>
+            ) : (
+              <>
+                <PlayIcon className="size-4" />
+                Run Code
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
+      {/* Monaco Editor */}
       <div className="flex-1">
         <Editor
-          height={"100%"}
+          height="100%"
           language={LANGUAGE_CONFIG[selectedLanguage].monacoLang}
           value={code}
           onChange={onCodeChange}
@@ -55,11 +102,20 @@ function CodeEditorPanel({
             lineNumbers: "on",
             scrollBeyondLastLine: false,
             automaticLayout: true,
-            minimap: { enabled: false },
+            minimap: {
+              enabled: false,
+            },
+            tabSize: 2,
+            wordWrap: "on",
+            renderWhitespace: "selection",
+            padding: {
+              top: 12,
+            },
           }}
         />
       </div>
     </div>
   );
 }
+
 export default CodeEditorPanel;

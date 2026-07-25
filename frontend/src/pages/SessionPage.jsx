@@ -1,4 +1,4 @@
-import { useUser } from "@clerk/clerk-react";
+import { useUser } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions";
@@ -51,10 +51,25 @@ function SessionPage() {
     if (!session || !user || loadingSession) return;
     if (isHost || isParticipant) return;
 
-    joinSessionMutation.mutate(id, { onSuccess: refetch });
+    if (session.password) {
+      const pwd = window.prompt("This session is password protected. Enter password to join:");
+      if (pwd === null) {
+        navigate("/dashboard");
+        return;
+      }
+      joinSessionMutation.mutate({ id, password: pwd }, { 
+        onSuccess: refetch,
+        onError: () => {
+          alert("Incorrect password!");
+          navigate("/dashboard");
+        }
+      });
+    } else {
+      joinSessionMutation.mutate({ id }, { onSuccess: refetch });
+    }
 
     // remove the joinSessionMutation, refetch from dependencies to avoid infinite loop
-  }, [session, user, loadingSession, isHost, isParticipant, id]);
+  }, [session, user, loadingSession, isHost, isParticipant, id, navigate]);
 
   // redirect the "participant" when session ends
   useEffect(() => {

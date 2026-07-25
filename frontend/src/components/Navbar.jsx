@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router";
-import { BookOpenIcon, LayoutDashboardIcon, SparklesIcon } from "lucide-react";
-import { UserButton } from "@clerk/clerk-react";
+import { BookOpenIcon, LayoutDashboardIcon, SparklesIcon, BotIcon, FileTextIcon, LogOutIcon, UserIcon } from "lucide-react";
+import { useUser } from "../context/AuthContext";
 
 function Navbar() {
   const location = useLocation();
+  const { user, logout } = useUser();
 
   console.log(location);
 
@@ -23,7 +24,7 @@ function Navbar() {
 
           <div className="flex flex-col">
             <span className="font-black text-xl bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent font-mono tracking-wider">
-              Talent IQ
+              Prep Place
             </span>
             <span className="text-xs text-base-content/60 font-medium -mt-1">Code Together</span>
           </div>
@@ -48,7 +49,41 @@ function Navbar() {
             </div>
           </Link>
 
-          {/* DASHBORD PAGE LINK */}
+          {/* INTERVIEWS PAGE LINK */}
+          <Link
+            to={"/interviews"}
+            className={`px-4 py-2.5 rounded-lg transition-all duration-200 
+              ${
+                isActive("/interviews")
+                  ? "bg-primary text-primary-content"
+                  : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
+              }
+              `}
+          >
+            <div className="flex items-center gap-x-2.5">
+              <BotIcon className="size-4" />
+              <span className="font-medium hidden lg:inline">Interviews</span>
+            </div>
+          </Link>
+
+          {/* RESUME PAGE LINK */}
+          <Link
+            to={"/resume"}
+            className={`px-4 py-2.5 rounded-lg transition-all duration-200 
+              ${
+                isActive("/resume")
+                  ? "bg-primary text-primary-content"
+                  : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
+              }
+              `}
+          >
+            <div className="flex items-center gap-x-2.5">
+              <FileTextIcon className="size-4" />
+              <span className="font-medium hidden lg:inline">Resume</span>
+            </div>
+          </Link>
+
+          {/* DASHBOARD PAGE LINK */}
           <Link
             to={"/dashboard"}
             className={`px-4 py-2.5 rounded-lg transition-all duration-200 
@@ -62,12 +97,38 @@ function Navbar() {
           >
             <div className="flex items-center gap-x-2.5">
               <LayoutDashboardIcon className="size-4" />
-              <span className="font-medium hidden sm:inline">Dashbord</span>
+              <span className="font-medium hidden sm:inline">Dashboard</span>
             </div>
           </Link>
 
           <div className="ml-4 mt-2">
-            <UserButton />
+            {user && (
+              <div className="dropdown dropdown-end">
+                <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar border border-base-300">
+                  <div className="w-10 rounded-full">
+                    <img alt="User avatar" src={user.imageUrl} />
+                  </div>
+                </div>
+                <ul tabIndex={0} className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52 border border-base-300">
+                  <li className="menu-title px-4 py-2">
+                    <span className="font-semibold text-base-content">{user.fullName}</span>
+                    <span className="text-xs text-base-content/60 block">{user.email}</span>
+                  </li>
+                  <li>
+                    <Link to="/profile" className="hover:bg-base-200 transition-colors mt-2">
+                      <UserIcon className="size-4" />
+                      Profile Settings
+                    </Link>
+                  </li>
+                  <li>
+                    <button onClick={logout} className="text-error hover:bg-error/10 hover:text-error transition-colors mt-2">
+                      <LogOutIcon className="size-4" />
+                      Logout
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       </div>
