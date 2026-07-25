@@ -17,7 +17,7 @@ const CATEGORIES = [
 ];
 
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
-const DURATIONS = [1, 15, 30, 45]; // in minutes
+const DURATIONS = [10, 15, 30, 45]; // in minutes
 
 const InterviewFormPage = () => {
   const navigate = useNavigate();

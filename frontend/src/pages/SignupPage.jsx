@@ -129,7 +129,9 @@ function SignupPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={6}
+                    minLength={8}
+                    pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$"
+                    title="Password must contain at least 8 characters, including one uppercase letter, one lowercase letter, one number, and one special symbol"
                   />
                   <button 
                     type="button" 

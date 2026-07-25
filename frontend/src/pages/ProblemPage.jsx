@@ -8,7 +8,7 @@ import ProblemDescription from "../components/ProblemDescription";
 import OutputPanel from "../components/OutputPanel";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import AiReviewPanel from "../components/AiReviewPanel";
-import { executeCode } from "../lib/piston";
+import { executeCode } from "../lib/execute";
 import axiosInstance from "../lib/axios";
 
 import toast from "react-hot-toast";
