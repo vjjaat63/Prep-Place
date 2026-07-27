@@ -13,6 +13,7 @@ const CATEGORIES = [
   "Operating Systems",
   "Computer Networks",
   "System Design",
+  "Machine Learning",
   "HR Interview",
 ];
 
