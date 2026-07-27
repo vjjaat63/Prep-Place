@@ -37,7 +37,7 @@ if (redisClient) {
   authLimiter = new RateLimiterRedis({
     storeClient: redisClient,
     keyPrefix: "rl_auth",
-    points: 5, // 5 requests
+    points: 30, // 30 requests (increased from 5 for easier testing)
     duration: 15 * 60, // per 15 minutes by IP
     blockDuration: 15 * 60, // Block for 15 minutes if consumed more than points
   });

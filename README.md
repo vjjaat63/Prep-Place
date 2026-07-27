@@ -45,7 +45,7 @@ Technical interviews are stressful, and preparing for them often requires juggli
   - Optimization Suggestions
   - Best Practices
 - **Robust Authentication**
-  A custom secure JWT authentication flow backed by MongoDB, featuring email OTP verification via Nodemailer and secure password hashing with bcryptjs.
+  A custom secure JWT authentication flow backed by MongoDB, featuring email OTP verification via Brevo API and secure password hashing with bcryptjs.
 - **Profile Management**
   Users can manage their personal profiles and seamlessly upload avatars, leveraging Cloudinary for fast and secure image delivery.
 - **Solo Practice Mode**
@@ -69,7 +69,7 @@ Technical interviews are stressful, and preparing for them often requires juggli
 - **Google Gemini API** — Generative AI for automated code analysis and feedback.
 - **JDoodle API** — Remote compiler API used for securely executing user code.
 - **Cloudinary** — Cloud storage service for handling user profile images.
-- **Nodemailer** — Node.js module for sending secure OTP verification emails.
+- **Brevo API** — Transactional email service for sending secure OTP verification emails.
 - **JWT & bcryptjs** — Tools for stateless authentication and secure password hashing.
 
 ## 🏗️ System Architecture
@@ -111,10 +111,8 @@ DB_URL=your_mongodb_connection_url
 CLIENT_URL=http://localhost:5173
 JWT_SECRET=your_jwt_secret
 GEMINI_API_KEY=your_gemini_api_key
-SMTP_HOST=your_smtp_host
-SMTP_PORT=your_smtp_port
-SMTP_USER=your_smtp_user
-SMTP_PASS=your_smtp_pass
+BREVO_API_KEY=your_brevo_api_key
+BREVO_SENDER_EMAIL=your_verified_gmail_address
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
