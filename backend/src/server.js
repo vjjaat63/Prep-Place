@@ -23,7 +23,11 @@ const __dirname = path.resolve();
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 // credentials:true meaning?? => server allows a browser to include cookies on request
-app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
+app.use(cors({ 
+  origin: ENV.CLIENT_URL, 
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRoutes);
