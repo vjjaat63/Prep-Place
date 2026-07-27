@@ -15,6 +15,7 @@ import interviewRoutes from "./routes/interviewRoute.js";
 import resumeRoutes from "./routes/resumeRoute.js";
 
 const app = express();
+app.set("trust proxy", 1); // allow secure cookies behind Railway/Render proxy
 
 const __dirname = path.resolve();
 
