@@ -7,17 +7,10 @@ import { ENV } from "../lib/env.js";
 import { sendOTP } from "../lib/email.js";
 import cloudinary from "../lib/cloudinary.js";
 
-// Utility function to generate JWT and set cookie
-const generateTokenAndSetCookie = (userId, res) => {
-  const token = jwt.sign({ userId }, ENV.JWT_SECRET, {
+// Utility function to generate JWT
+const generateToken = (userId) => {
+  return jwt.sign({ userId }, ENV.JWT_SECRET, {
     expiresIn: "15d",
-  });
-
-  res.cookie("jwt", token, {
-    maxAge: 15 * 24 * 60 * 60 * 1000, // 15 days in MS
-    httpOnly: true, // prevent XSS attacks cross-site scripting attacks
-    sameSite: ENV.NODE_ENV !== "development" ? "none" : "strict", // required for cross-domain cookies (Vercel Frontend -> Railway Backend)
-    secure: ENV.NODE_ENV !== "development",
   });
 };
 
@@ -144,7 +137,7 @@ export const verifyEmail = async (req, res) => {
       image: user.profileImage,
     });
 
-    generateTokenAndSetCookie(user._id, res);
+    const token = generateToken(user._id);
 
     res.status(200).json({
       _id: user._id,
@@ -152,6 +145,7 @@ export const verifyEmail = async (req, res) => {
       email: user.email,
       profileImage: user.profileImage,
       clerkId: user.clerkId,
+      token,
     });
   } catch (error) {
     console.error("Error in verifyEmail controller:", error.message);
@@ -219,7 +213,7 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    generateTokenAndSetCookie(user._id, res);
+    const token = generateToken(user._id);
 
     res.status(200).json({
       _id: user._id,
@@ -227,6 +221,7 @@ export const login = async (req, res) => {
       email: user.email,
       profileImage: user.profileImage,
       clerkId: user.clerkId,
+      token,
     });
   } catch (error) {
     console.error("Error in login controller:", error.message);
@@ -236,7 +231,6 @@ export const login = async (req, res) => {
 
 export const logout = (req, res) => {
   try {
-    res.cookie("jwt", "", { maxAge: 0 });
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.error("Error in logout controller:", error.message);
@@ -346,9 +340,6 @@ export const confirmAccountDeletion = async (req, res) => {
 
     // OTP valid, delete account
     await User.findByIdAndDelete(user._id);
-
-    // Clear cookie
-    res.cookie("jwt", "", { maxAge: 0 });
 
     res.status(200).json({ message: "Account deleted successfully" });
   } catch (error) {

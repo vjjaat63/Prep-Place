@@ -43,6 +43,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axiosInstance.post("/auth/login", { email, password });
       const dbUser = response.data;
+      
+      if (dbUser.token) {
+        localStorage.setItem("jwt", dbUser.token);
+      }
+
       setUser({
         id: dbUser.clerkId || dbUser._id,
         _id: dbUser._id,
@@ -75,6 +80,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axiosInstance.post("/auth/verify-email", { email, otp });
       const dbUser = response.data;
+
+      if (dbUser.token) {
+        localStorage.setItem("jwt", dbUser.token);
+      }
+
       setUser({
         id: dbUser.clerkId || dbUser._id,
         _id: dbUser._id,
@@ -106,6 +116,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await axiosInstance.post("/auth/logout");
+      localStorage.removeItem("jwt");
       setUser(null);
       setIsSignedIn(false);
       toast.success("Logged out successfully");
