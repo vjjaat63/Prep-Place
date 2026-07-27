@@ -6,15 +6,17 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem("jwt");
+  console.log("Axios Interceptor - Token from localStorage:", token); // DEBUG
+  console.log("Axios Interceptor - Config headers before:", config.headers); // DEBUG
+  
   if (token) {
-    if (config.headers && typeof config.headers.set === 'function') {
-      config.headers.set('Authorization', `Bearer ${token}`);
-    } else {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  console.log("Axios Interceptor - Config headers after:", config.headers); // DEBUG
   return config;
 });
 
 export default axiosInstance;
+
