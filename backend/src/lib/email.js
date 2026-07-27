@@ -8,10 +8,17 @@ export const sendOTP = async (email, otp) => {
     const transporter = nodemailer.createTransport({
       host: ENV.SMTP_HOST,
       port: ENV.SMTP_PORT,
+      secure: ENV.SMTP_PORT == 465, // true for 465, false for other ports
       auth: {
         user: ENV.SMTP_USER,
         pass: ENV.SMTP_PASS,
       },
+      tls: {
+        // do not fail on invalid certs
+        rejectUnauthorized: false,
+      },
+      // Force IPv4. Railway/Docker networks sometimes fail to route IPv6 to Google's SMTP.
+      family: 4,
     });
 
     const mailOptions = {
