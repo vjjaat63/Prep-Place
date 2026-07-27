@@ -6,8 +6,6 @@ function Navbar() {
   const location = useLocation();
   const { user, logout } = useUser();
 
-  console.log(location);
-
   const isActive = (path) => location.pathname === path;
 
   return (
