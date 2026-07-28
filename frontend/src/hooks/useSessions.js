@@ -17,6 +17,7 @@ export const useActiveSessions = () => {
   const result = useQuery({
     queryKey: ["activeSessions"],
     queryFn: sessionApi.getActiveSessions,
+    refetchInterval: 3000, // auto-refresh dashboard for new sessions
   });
 
   return result;

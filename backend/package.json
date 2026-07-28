@@ -13,6 +13,7 @@
   "description": "",
   "dependencies": {
     "@google/genai": "^2.13.0",
+    "@google/generative-ai": "^0.24.1",
     "@stream-io/node-sdk": "^0.7.12",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.0",

@@ -1,5 +1,5 @@
 import { useUser } from "../context/AuthContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions";
 import { PROBLEMS } from "../data/problems";
@@ -39,13 +39,24 @@ function SessionPage() {
     isParticipant
   );
 
-  // find the problem data based on session problem title
-  const problemData = session?.problem
-    ? Object.values(PROBLEMS).find((p) => p.title === session.problem)
+  const [activeProblemTitle, setActiveProblemTitle] = useState(null);
+
+  useEffect(() => {
+    if (session?.problem && !activeProblemTitle) {
+      setActiveProblemTitle(session.problem);
+    }
+  }, [session, activeProblemTitle]);
+
+  // find the problem data based on active problem title
+  const problemData = activeProblemTitle
+    ? Object.values(PROBLEMS).find((p) => p.title === activeProblemTitle)
     : null;
 
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
-  const [code, setCode] = useState(problemData?.starterCode?.[selectedLanguage] || "");
+  const [code, setCode] = useState("");
+  const [isSolved, setIsSolved] = useState(false);
+  const [timerKey, setTimerKey] = useState(0);
+  const hasInitializedCode = useRef(false);
 
   // auto-join session if user is not already a participant and not the host
   useEffect(() => {
@@ -58,7 +69,7 @@ function SessionPage() {
         navigate("/dashboard");
         return;
       }
-      joinSessionMutation.mutate({ id, password: pwd }, { 
+      joinSessionMutation.mutate({ id, password: pwd }, {
         onSuccess: refetch,
         onError: () => {
           alert("Incorrect password!");
@@ -79,10 +90,11 @@ function SessionPage() {
     if (session.status === "completed") navigate("/dashboard");
   }, [session, loadingSession, navigate]);
 
-  // update code when problem loads or changes
+  // update code when problem loads for the FIRST time
   useEffect(() => {
-    if (problemData?.starterCode?.[selectedLanguage]) {
+    if (problemData?.starterCode?.[selectedLanguage] && !hasInitializedCode.current) {
       setCode(problemData.starterCode[selectedLanguage]);
+      hasInitializedCode.current = true;
     }
   }, [problemData, selectedLanguage]);
 
@@ -96,6 +108,31 @@ function SessionPage() {
 
     socket.emit("language_change", { sessionId: id, language: newLang });
     socket.emit("code_change", { sessionId: id, code: starterCode });
+  };
+
+  const handleProblemChange = (e) => {
+    const newProblem = e.target.value;
+    setActiveProblemTitle(newProblem);
+
+    // reset solved state and timer
+    setIsSolved(false);
+    setTimerKey(prev => prev + 1);
+
+    // Also reset language to javascript when problem changes to be safe
+    setSelectedLanguage("javascript");
+    const newProblemData = Object.values(PROBLEMS).find((p) => p.title === newProblem);
+    const starterCode = newProblemData?.starterCode?.["javascript"] || "";
+    setCode(starterCode);
+    setOutput(null);
+
+    socket.emit("problem_change", { sessionId: id, problemTitle: newProblem });
+    socket.emit("language_change", { sessionId: id, language: "javascript" });
+    socket.emit("code_change", { sessionId: id, code: starterCode });
+  };
+
+  const handleSolveProblem = () => {
+    setIsSolved(true);
+    socket.emit("problem_solved", { sessionId: id, isSolved: true });
   };
 
   const handleRunCode = async () => {
@@ -116,27 +153,45 @@ function SessionPage() {
 
   useEffect(() => {
     if (!id) return;
-    
+
     socket.connect();
     socket.emit("join_session", id);
 
-    const onCodeChange = ({ code }) => setCode(code);
+    const onCodeChange = ({ code }) => {
+      setCode(code);
+      hasInitializedCode.current = true;
+    };
     const onLanguageChange = ({ language }) => setSelectedLanguage(language);
+    const onProblemChange = ({ problemTitle }) => {
+      setActiveProblemTitle(problemTitle);
+      setIsSolved(false);
+      setTimerKey(prev => prev + 1);
+    };
+    const onProblemSolved = ({ isSolved }) => {
+      setIsSolved(isSolved);
+      if (isHost && isSolved) {
+        import("react-hot-toast").then((toast) => {
+          toast.default.success("Candidate has marked the problem as solved!");
+        });
+      }
+    };
 
     socket.on("code_change", onCodeChange);
     socket.on("language_change", onLanguageChange);
+    socket.on("problem_change", onProblemChange);
+    socket.on("problem_solved", onProblemSolved);
 
     return () => {
       socket.off("code_change", onCodeChange);
       socket.off("language_change", onLanguageChange);
+      socket.off("problem_change", onProblemChange);
+      socket.off("problem_solved", onProblemSolved);
       socket.disconnect();
     };
   }, [id]);
 
   return (
     <div className="h-screen bg-base-100 flex flex-col">
-      <Navbar />
-
       <div className="flex-1">
         <PanelGroup direction="horizontal">
           {/* LEFT PANEL - CODE EDITOR & PROBLEM DETAILS */}
@@ -149,16 +204,29 @@ function SessionPage() {
                   <div className="p-6 bg-base-100 border-b border-base-300">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h1 className="text-3xl font-bold text-base-content">
-                          {session?.problem || "Loading..."}
-                        </h1>
+                        {isHost ? (
+                          <select
+                            className="select select-bordered select-sm w-full max-w-xs text-xl font-bold bg-base-100 border-none px-0 focus:outline-none mb-1 text-base-content"
+                            value={activeProblemTitle || session?.problem || ""}
+                            onChange={handleProblemChange}
+                          >
+                            {Object.values(PROBLEMS).map((p) => (
+                              <option key={p.id} value={p.title}>{p.title}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <h1 className="text-3xl font-bold text-base-content">
+                            {activeProblemTitle || session?.problem || "Loading..."}
+                          </h1>
+                        )}
                         {problemData?.category && (
                           <p className="text-base-content/60 mt-1">{problemData.category}</p>
                         )}
-                        <p className="text-base-content/60 mt-2">
-                          Host: {session?.host?.name || "Loading..."} •{" "}
-                          {session?.participant ? 2 : 1}/2 participants
-                        </p>
+                        <div className="text-base-content/60 mt-2 text-sm">
+                          <p>Host: {session?.host?.name || "Loading..."}</p>
+                          <p>Session ID: <span className="font-mono bg-base-300 px-1 rounded">{id}</span></p>
+                          <p>{session?.participant ? 2 : 1}/2 participants</p>
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-3">
@@ -276,12 +344,16 @@ function SessionPage() {
                       selectedLanguage={selectedLanguage}
                       code={code}
                       isRunning={isRunning}
+                      isSolved={isSolved}
+                      isParticipant={isParticipant}
+                      timerKey={timerKey}
                       onLanguageChange={handleLanguageChange}
                       onCodeChange={(value) => {
                         setCode(value);
                         socket.emit("code_change", { sessionId: id, code: value });
                       }}
                       onRunCode={handleRunCode}
+                      onSolve={handleSolveProblem}
                     />
                   </Panel>
 

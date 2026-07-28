@@ -10,9 +10,13 @@ function CodeEditorPanel({
   code,
   isRunning,
   isSuccess,
+  isSolved,
+  isParticipant,
+  timerKey,
   onLanguageChange,
   onCodeChange,
   onRunCode,
+  onSolve,
 }) {
   const [seconds, setSeconds] = useState(0);
   const editorRef = useRef(null);
@@ -52,8 +56,12 @@ function CodeEditorPanel({
   };
 
   useEffect(() => {
+    setSeconds(0);
+  }, [timerKey]);
+
+  useEffect(() => {
     let timer;
-    if (!isSuccess) {
+    if (!isSuccess && !isSolved) {
       timer = setInterval(() => {
         setSeconds((prev) => prev + 1);
       }, 1000);
@@ -61,7 +69,7 @@ function CodeEditorPanel({
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [isSuccess]);
+  }, [isSuccess, isSolved]);
 
   const formatTime = (totalSeconds) => {
     const m = Math.floor(totalSeconds / 60)
@@ -101,10 +109,19 @@ function CodeEditorPanel({
         </div>
 
         <div className="flex items-center gap-4">
-          <div className={`flex items-center gap-2 font-mono ${isSuccess ? 'text-success font-bold' : 'text-base-content/70'}`}>
-            <TimerIcon className={`size-4 ${isSuccess ? 'animate-bounce' : ''}`} />
+          <div className={`flex items-center gap-2 font-mono ${isSuccess || isSolved ? 'text-success font-bold' : 'text-base-content/70'}`}>
+            <TimerIcon className={`size-4 ${isSuccess || isSolved ? 'animate-bounce' : ''}`} />
             {formatTime(seconds)}
           </div>
+
+          {isParticipant && !isSolved && (
+            <button
+              className="btn btn-success btn-sm gap-2"
+              onClick={onSolve}
+            >
+              Mark as Solved
+            </button>
+          )}
 
           <button
             className="btn btn-primary btn-sm gap-2"
