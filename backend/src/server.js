@@ -59,16 +59,44 @@ if (ENV.NODE_ENV === "production") {
   });
 }
 
+const sessionStates = new Map();
+
 io.on("connection", (socket) => {
   socket.on("join_session", (sessionId) => {
     socket.join(sessionId);
+
+    // Send current state to the joining user
+    if (sessionStates.has(sessionId)) {
+      const state = sessionStates.get(sessionId);
+      if (state.language) socket.emit("language_change", { language: state.language });
+      if (state.code) socket.emit("code_change", { code: state.code });
+      if (state.problemTitle) socket.emit("problem_change", { problemTitle: state.problemTitle });
+      if (state.isSolved) socket.emit("problem_solved", { isSolved: state.isSolved });
+    }
+  });
+
+  socket.on("problem_change", ({ sessionId, problemTitle }) => {
+    if (!sessionStates.has(sessionId)) sessionStates.set(sessionId, {});
+    sessionStates.get(sessionId).problemTitle = problemTitle;
+    sessionStates.get(sessionId).isSolved = false; // reset on problem change
+    socket.to(sessionId).emit("problem_change", { problemTitle });
+  });
+
+  socket.on("problem_solved", ({ sessionId, isSolved }) => {
+    if (!sessionStates.has(sessionId)) sessionStates.set(sessionId, {});
+    sessionStates.get(sessionId).isSolved = isSolved;
+    socket.to(sessionId).emit("problem_solved", { isSolved });
   });
 
   socket.on("code_change", ({ sessionId, code }) => {
+    if (!sessionStates.has(sessionId)) sessionStates.set(sessionId, {});
+    sessionStates.get(sessionId).code = code;
     socket.to(sessionId).emit("code_change", { code });
   });
 
   socket.on("language_change", ({ sessionId, language }) => {
+    if (!sessionStates.has(sessionId)) sessionStates.set(sessionId, {});
+    sessionStates.get(sessionId).language = language;
     socket.to(sessionId).emit("language_change", { language });
   });
 
