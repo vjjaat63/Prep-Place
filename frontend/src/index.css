@@ -10,3 +10,16 @@
     cursor: pointer;
   }
 }
+
+/* Remote Collaborative Cursor Style */
+.remote-cursor {
+  border-left: 2px solid #3b82f6; /* Tailwind Blue 500 */
+  animation: blink 1s step-end infinite;
+  position: absolute;
+  z-index: 100;
+  pointer-events: none;
+}
+
+@keyframes blink {
+  50% { border-color: transparent; }
+}

@@ -2,6 +2,8 @@ import express from "express";
 import path from "path";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 import { ENV } from "./lib/env.js";
 import { connectDB } from "./lib/db.js";
@@ -15,6 +17,13 @@ import interviewRoutes from "./routes/interviewRoute.js";
 import resumeRoutes from "./routes/resumeRoute.js";
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: ENV.CLIENT_URL,
+    credentials: true,
+  }
+});
 app.set("trust proxy", 1); // allow secure cookies behind Railway/Render proxy
 
 const __dirname = path.resolve();
@@ -50,10 +59,28 @@ if (ENV.NODE_ENV === "production") {
   });
 }
 
+io.on("connection", (socket) => {
+  socket.on("join_session", (sessionId) => {
+    socket.join(sessionId);
+  });
+
+  socket.on("code_change", ({ sessionId, code }) => {
+    socket.to(sessionId).emit("code_change", { code });
+  });
+
+  socket.on("language_change", ({ sessionId, language }) => {
+    socket.to(sessionId).emit("language_change", { language });
+  });
+
+  socket.on("cursor_change", ({ sessionId, cursor }) => {
+    socket.to(sessionId).emit("cursor_change", { cursor });
+  });
+});
+
 const startServer = async () => {
   try {
     await connectDB();
-    app.listen(ENV.PORT, () => console.log("Server is running on port:", ENV.PORT));
+    httpServer.listen(ENV.PORT, () => console.log("Server is running on port:", ENV.PORT));
   } catch (error) {
     console.error("💥 Error starting the server", error);
   }

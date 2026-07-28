@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getInterviewById, continueInterview, endInterview } from "../api/interview";
-import { Send, Loader, StopCircle, User, Bot, Clock } from "lucide-react";
+import { Send, Loader, StopCircle, User, Bot, Clock, Mic, MicOff } from "lucide-react";
 import toast from "react-hot-toast";
 import Navbar from "../components/Navbar";
 
@@ -10,8 +10,11 @@ const InterviewSessionPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [inputMessage, setInputMessage] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
   const messagesEndRef = useRef(null);
   const hasAutoEnded = useRef(false);
+  const spokenMessagesRef = useRef(new Set());
+  const recognitionRef = useRef(null);
 
   const queryClient = useQueryClient();
 
@@ -78,6 +81,57 @@ const InterviewSessionPage = () => {
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
+  // Web Speech API Setup
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+
+        recognitionRef.current.onresult = (event) => {
+          let currentTranscript = "";
+          for (let i = 0; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
+          }
+          setInputMessage(currentTranscript);
+        };
+
+        recognitionRef.current.onerror = (event) => {
+          console.error("Speech recognition error", event.error);
+          setIsRecording(false);
+          toast.error("Speech recognition failed. Please try again.");
+        };
+
+        recognitionRef.current.onend = () => {
+           setIsRecording(false);
+        };
+      }
+    }
+    
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+
+  // Handle Text-to-Speech
+  useEffect(() => {
+    if (!interview || interview.mode !== "Audio") return;
+    
+    const lastMsg = interview.conversation[interview.conversation.length - 1];
+    
+    if (lastMsg && lastMsg.role === "model" && !spokenMessagesRef.current.has(lastMsg.content)) {
+      spokenMessagesRef.current.add(lastMsg.content);
+      
+      const utterance = new SpeechSynthesisUtterance(lastMsg.content);
+      window.speechSynthesis.speak(utterance);
+    }
+  }, [interview]);
+
   // Scroll to bottom on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -126,7 +180,30 @@ const InterviewSessionPage = () => {
   const handleSend = (e) => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
+    
+    // Stop recording if active when sending
+    if (isRecording && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    }
+
     sendMessage(inputMessage.trim());
+  };
+
+  const toggleRecording = () => {
+    if (!recognitionRef.current) {
+      toast.error("Your browser does not support Speech Recognition.");
+      return;
+    }
+
+    if (isRecording) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    } else {
+      setInputMessage(""); // Clear previous input
+      recognitionRef.current.start();
+      setIsRecording(true);
+    }
   };
 
   const handleEndInterview = () => {
@@ -236,6 +313,16 @@ const InterviewSessionPage = () => {
       {/* Input Area */}
       <div className="bg-base-200 rounded-b-2xl p-4 border-t border-base-300">
         <form onSubmit={handleSend} className="flex gap-2">
+          {interview.mode === "Audio" && (
+            <button
+              type="button"
+              onClick={toggleRecording}
+              className={`btn ${isRecording ? "btn-error animate-pulse" : "btn-secondary"} h-14 w-14 p-0 shrink-0`}
+              title={isRecording ? "Stop Recording" : "Start Recording"}
+            >
+              {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            </button>
+          )}
           <textarea
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}

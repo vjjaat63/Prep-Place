@@ -16,7 +16,7 @@ Follow these rules strictly:
 
 export const createInterview = async (req, res) => {
   try {
-    const { category, difficulty, duration } = req.body;
+    const { category, difficulty, duration, mode = "Text" } = req.body;
     
     if (!category || !difficulty || !duration) {
       return res.status(400).json({ message: "All fields are required" });
@@ -27,6 +27,7 @@ export const createInterview = async (req, res) => {
       category,
       difficulty,
       duration,
+      mode,
       conversation: [],
     });
 

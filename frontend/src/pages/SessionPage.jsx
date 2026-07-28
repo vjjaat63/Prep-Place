@@ -12,6 +12,7 @@ import CodeEditorPanel from "../components/CodeEditorPanel";
 import OutputPanel from "../components/OutputPanel";
 
 import useStreamClient from "../hooks/useStreamClient";
+import { socket } from "../lib/socket";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
 import VideoCallUI from "../components/VideoCallUI";
 
@@ -92,6 +93,9 @@ function SessionPage() {
     const starterCode = problemData?.starterCode?.[newLang] || "";
     setCode(starterCode);
     setOutput(null);
+
+    socket.emit("language_change", { sessionId: id, language: newLang });
+    socket.emit("code_change", { sessionId: id, code: starterCode });
   };
 
   const handleRunCode = async () => {
@@ -109,6 +113,25 @@ function SessionPage() {
       endSessionMutation.mutate(id, { onSuccess: () => navigate("/dashboard") });
     }
   };
+
+  useEffect(() => {
+    if (!id) return;
+    
+    socket.connect();
+    socket.emit("join_session", id);
+
+    const onCodeChange = ({ code }) => setCode(code);
+    const onLanguageChange = ({ language }) => setSelectedLanguage(language);
+
+    socket.on("code_change", onCodeChange);
+    socket.on("language_change", onLanguageChange);
+
+    return () => {
+      socket.off("code_change", onCodeChange);
+      socket.off("language_change", onLanguageChange);
+      socket.disconnect();
+    };
+  }, [id]);
 
   return (
     <div className="h-screen bg-base-100 flex flex-col">
@@ -248,11 +271,16 @@ function SessionPage() {
                 <PanelGroup direction="vertical">
                   <Panel defaultSize={70} minSize={30}>
                     <CodeEditorPanel
+                      sessionId={id}
+                      socket={socket}
                       selectedLanguage={selectedLanguage}
                       code={code}
                       isRunning={isRunning}
                       onLanguageChange={handleLanguageChange}
-                      onCodeChange={(value) => setCode(value)}
+                      onCodeChange={(value) => {
+                        setCode(value);
+                        socket.emit("code_change", { sessionId: id, code: value });
+                      }}
                       onRunCode={handleRunCode}
                     />
                   </Panel>

@@ -42,6 +42,11 @@ const interviewSchema = new mongoose.Schema(
       enum: ["Ongoing", "Completed"],
       default: "Ongoing",
     },
+    mode: {
+      type: String,
+      enum: ["Text", "Audio"],
+      default: "Text",
+    },
     conversation: [messageSchema],
     score: {
       overall: Number,

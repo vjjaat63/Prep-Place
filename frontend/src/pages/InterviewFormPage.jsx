@@ -26,6 +26,7 @@ const InterviewFormPage = () => {
     category: CATEGORIES[0],
     difficulty: "Medium",
     duration: 30,
+    mode: "Text",
   });
 
   const { mutate: startInterview, isPending } = useMutation({
@@ -109,6 +110,30 @@ const InterviewFormPage = () => {
                   {dur} min
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Mode */}
+          <div className="form-control w-full mb-8">
+            <label className="label">
+              <span className="label-text font-semibold text-lg">Interview Mode</span>
+            </label>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, mode: "Text" })}
+                className={`flex-1 btn ${formData.mode === "Text" ? 'btn-primary' : 'btn-outline'}`}
+              >
+                Text
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, mode: "Audio" })}
+                className={`flex-1 btn ${formData.mode === "Audio" ? 'btn-primary' : 'btn-outline'} gap-2`}
+              >
+                Audio
+                <span className="badge badge-sm badge-secondary">Beta</span>
+              </button>
             </div>
           </div>
 

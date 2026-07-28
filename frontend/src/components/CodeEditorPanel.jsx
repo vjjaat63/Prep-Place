@@ -1,9 +1,11 @@
 import Editor from "@monaco-editor/react";
 import { Loader2Icon, PlayIcon, TimerIcon } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { LANGUAGE_CONFIG } from "../data/problems";
 
 function CodeEditorPanel({
+  sessionId,
+  socket,
   selectedLanguage,
   code,
   isRunning,
@@ -13,6 +15,41 @@ function CodeEditorPanel({
   onRunCode,
 }) {
   const [seconds, setSeconds] = useState(0);
+  const editorRef = useRef(null);
+  const decorationsRef = useRef(null);
+
+  const handleEditorDidMount = (editor, monaco) => {
+    editorRef.current = editor;
+
+    editor.onDidChangeCursorPosition((e) => {
+      if (socket && sessionId) {
+        socket.emit("cursor_change", {
+          sessionId,
+          cursor: e.position,
+        });
+      }
+    });
+
+    if (socket) {
+      socket.on("cursor_change", ({ cursor }) => {
+        if (!editorRef.current) return;
+        
+        const decoration = {
+          range: new monaco.Range(cursor.lineNumber, cursor.column, cursor.lineNumber, cursor.column),
+          options: {
+            className: "remote-cursor",
+            isWholeLine: false,
+          }
+        };
+
+        if (!decorationsRef.current) {
+          decorationsRef.current = editor.createDecorationsCollection([decoration]);
+        } else {
+          decorationsRef.current.set([decoration]);
+        }
+      });
+    }
+  };
 
   useEffect(() => {
     let timer;
@@ -96,6 +133,7 @@ function CodeEditorPanel({
           language={LANGUAGE_CONFIG[selectedLanguage].monacoLang}
           value={code}
           onChange={onCodeChange}
+          onMount={handleEditorDidMount}
           theme="vs-dark"
           options={{
             fontSize: 16,
