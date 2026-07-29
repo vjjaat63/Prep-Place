@@ -7,6 +7,10 @@ import {
   UsersIcon,
   VideoIcon,
   ZapIcon,
+  BotIcon,
+  FileTextIcon,
+  CodeIcon,
+  ShieldCheckIcon,
 } from "lucide-react";
 
 
@@ -55,30 +59,37 @@ function HomePage() {
 
             <h1 className="text-5xl lg:text-7xl font-black leading-tight">
               <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-                Code Together,
+                Master Your
               </span>
               <br />
-              <span className="text-base-content">Learn Together</span>
+              <span className="text-base-content">Tech Interviews</span>
             </h1>
 
             <p className="text-xl text-base-content/70 leading-relaxed max-w-xl">
-              The ultimate platform for collaborative coding interviews and pair programming.
-              Connect face-to-face, code in real-time, and ace your technical interviews.
+              The ultimate all-in-one platform to prepare for technical interviews. Practice coding problems, conduct collaborative peer interviews, take AI mock interviews, and analyze your resume.
             </p>
 
             {/* FEATURE PILLS */}
             <div className="flex flex-wrap gap-3">
               <div className="badge badge-lg badge-outline">
-                <CheckIcon className="size-4 text-success" />
-                Live Video Chat
+                <CheckIcon className="size-4 text-success mr-2" />
+                Coding Problems
               </div>
               <div className="badge badge-lg badge-outline">
-                <CheckIcon className="size-4 text-success" />
-                Code Editor
+                <CheckIcon className="size-4 text-success mr-2" />
+                AI Mock Interviews
               </div>
               <div className="badge badge-lg badge-outline">
-                <CheckIcon className="size-4 text-success" />
-                Multi-Language
+                <CheckIcon className="size-4 text-success mr-2" />
+                Peer Sessions
+              </div>
+              <div className="badge badge-lg badge-outline">
+                <CheckIcon className="size-4 text-success mr-2" />
+                Resume Analysis
+              </div>
+              <div className="badge badge-lg badge-outline">
+                <CheckIcon className="size-4 text-success mr-2" />
+                Privacy First
               </div>
             </div>
 
@@ -90,11 +101,6 @@ function HomePage() {
                   <ArrowRightIcon className="size-5" />
                 </button>
               </Link>
-
-              <button className="btn btn-outline btn-lg">
-                <VideoIcon className="size-5" />
-                Watch Demo
-              </button>
             </div>
 
             {/* STATS */}
@@ -135,47 +141,83 @@ function HomePage() {
         </div>
 
         {/* FEATURES GRID */}
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* Feature 1 */}
-          <div className="card bg-base-100 shadow-xl">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {/* Feature 1: Problems */}
+          <div className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1">
             <div className="card-body items-center text-center">
               <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
-                <VideoIcon className="size-8 text-primary" />
+                <CodeIcon className="size-8 text-primary" />
               </div>
-              <h3 className="card-title">HD Video Call</h3>
+              <h3 className="card-title">Coding Problems</h3>
               <p className="text-base-content/70">
-                Crystal clear video and audio for seamless communication during interviews
+                Practice with a curated list of DSA problems. Write code, run tests, and track your progress.
               </p>
             </div>
           </div>
 
-          {/* Feature 2 */}
-          <div className="card bg-base-100 shadow-xl">
+          {/* Feature 2: Collaborative */}
+          <div className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1">
             <div className="card-body items-center text-center">
-              <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
-                <Code2Icon className="size-8 text-primary" />
+              <div className="size-16 bg-secondary/10 rounded-2xl flex items-center justify-center mb-4">
+                <UsersIcon className="size-8 text-secondary" />
               </div>
-              <h3 className="card-title">Live Code Editor</h3>
+              <h3 className="card-title">Peer Interviews</h3>
               <p className="text-base-content/70">
-                Collaborate in real-time with syntax highlighting and multiple language support
+                Collaborate in real-time with HD video, shared code editor, and synced execution.
               </p>
             </div>
           </div>
 
-          {/* Feature 3 */}
-          <div className="card bg-base-100 shadow-xl">
+          {/* Feature 3: AI Mock */}
+          <div className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1">
             <div className="card-body items-center text-center">
-              <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
-                <UsersIcon className="size-8 text-primary" />
+              <div className="size-16 bg-accent/10 rounded-2xl flex items-center justify-center mb-4">
+                <BotIcon className="size-8 text-accent" />
               </div>
-              <h3 className="card-title">Easy Collaboration</h3>
+              <h3 className="card-title">AI Mock Interviews</h3>
               <p className="text-base-content/70">
-                Share your screen, discuss solutions, and learn from each other in real-time
+                Simulate real interviews with an AI interviewer. Get instant feedback on your code and communication.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 4: Resume */}
+          <div className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1">
+            <div className="card-body items-center text-center">
+              <div className="size-16 bg-success/10 rounded-2xl flex items-center justify-center mb-4">
+                <FileTextIcon className="size-8 text-success" />
+              </div>
+              <h3 className="card-title">Resume Analysis</h3>
+              <p className="text-base-content/70">
+                Upload your resume for AI-powered ATS scoring, detailed feedback, and tailored suggestions.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 5: Privacy */}
+          <div className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1">
+            <div className="card-body items-center text-center">
+              <div className="size-16 bg-info/10 rounded-2xl flex items-center justify-center mb-4">
+                <ShieldCheckIcon className="size-8 text-info" />
+              </div>
+              <h3 className="card-title">Privacy First</h3>
+              <p className="text-base-content/70">
+                Your data is yours. All video and chat data is permanently deleted the moment your session ends.
               </p>
             </div>
           </div>
         </div>
       </div>
+      {/* FOOTER */}
+      <footer className="footer footer-center p-10 bg-base-200/50 text-base-content mt-20 border-t border-primary/10">
+        <aside>
+          <div className="flex items-center gap-2 mb-2 justify-center">
+            <SparklesIcon className="size-5 text-primary" />
+            <span className="font-bold text-lg">Prep Place</span>
+          </div>
+          <p>Copyright © {new Date().getFullYear()} - All rights reserved by Prep Place</p>
+        </aside>
+      </footer>
     </div>
   );
 }
