@@ -15,6 +15,7 @@ const InterviewSessionPage = () => {
   const hasAutoEnded = useRef(false);
   const spokenMessagesRef = useRef(new Set());
   const recognitionRef = useRef(null);
+  const hasStartedInterview = useRef(false);
 
   const queryClient = useQueryClient();
 
@@ -172,7 +173,8 @@ const InterviewSessionPage = () => {
 
   // Auto-start if empty
   useEffect(() => {
-    if (interview && interview.conversation.length === 0 && !isSending) {
+    if (interview && interview.conversation.length === 0 && !isSending && !hasStartedInterview.current) {
+      hasStartedInterview.current = true;
       sendMessage(""); // Send an empty message to trigger the AI's first greeting
     }
   }, [interview, isSending, sendMessage]);
