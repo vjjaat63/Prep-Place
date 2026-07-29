@@ -26,7 +26,7 @@
 Coming Soon
 
 **Demo Video:**
-https://youtu.be/YOUR_VIDEO_LINK
+prep-place.vercel.app
 
 ## ❓ Why Prep Place?
 
@@ -153,12 +153,13 @@ VITE_STREAM_API_KEY=your_stream_api_key
 
 ## 🔌 API Overview
 
-- `POST /signup` - Register a new user and generate OTP
-- `POST /login` - Authenticate user and issue JWT
-- `POST /verify-otp` - Verify email address using the emailed OTP
-- `POST /run-code` - Proxy request to JDoodle to compile and execute code
-- `POST /review-code` - Send code to Gemini API for AI code review
-- `GET /profile` - Retrieve the current authenticated user's profile
+- `/api/auth` - Authentication, registration, and OTP verification (via Brevo API)
+- `/api/chat` - Real-time chat functionality
+- `/api/sessions` - Collaborative session management
+- `/api/execute` - Proxies requests to JDoodle to securely compile and execute code
+- `/api/ai` - Integrates with Google Gemini API for AI code reviews and feedback
+- `/api/interviews` - Manages mock interviews and history
+- `/api/resume` - Analyzes uploaded resumes and provides an ATS score
 
 ## 🧗 Challenges Faced
 
