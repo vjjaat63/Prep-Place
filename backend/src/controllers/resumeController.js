@@ -30,9 +30,69 @@ const uploadToCloudinary = (buffer, originalname) => {
   });
 };
 
-const RESUME_SYSTEM_PROMPT = `You are an expert technical recruiter and ATS (Applicant Tracking System) software.
-Your task is to analyze the following resume and return a structured JSON report.
-Focus your analysis on:
+const getResumeSystemPrompt = (jobDescription = null) => {
+  const today = new Date().toISOString().split("T")[0]; // e.g. "2026-08-02"
+  const hasJD = jobDescription && jobDescription.trim().length > 0;
+
+  const keywordSection = hasJD
+    ? `### 2. Keyword & Job Description Match (25 points)
+A job description has been provided. Score this section based on how well the resume matches it:
+- Identify the key required skills, technologies, and qualifications from the job description.
+- Award up to 15 pts for how many of those required keywords/skills appear in the resume.
+- Award up to 5 pts if the candidate's experience level matches the role's requirements.
+- Award up to 5 pts if the resume's language mirrors the job description's terminology.
+- List any important keywords from the JD that are missing from the resume in "missingSkills".`
+    : `### 2. Keyword Density & Skills Section (25 points)
+No job description was provided, so score based on general best practices:
+- Presence of a dedicated Skills section with specific technologies/tools → up to 10 pts
+- Use of industry-standard keywords for the candidate's apparent target role → up to 10 pts
+- Avoidance of vague buzzwords with no supporting evidence (e.g., "hardworking", "team player" alone) → up to 5 pts`;
+
+  return `You are an expert technical recruiter and ATS (Applicant Tracking System) software.
+Today's date is ${today}. Use this to correctly determine whether dates on the resume are in the past, present, or future.
+Any date on or before ${today} should be treated as a past or present date — do NOT flag these as future dates.
+Only flag a date as a "future date" if it is strictly after ${today}.
+
+Your task is to analyze the following resume${hasJD ? " against the provided job description" : ""} and return a structured JSON report.
+
+## ATS SCORE CALCULATION (atsScore: 0–100)
+You MUST compute the atsScore using the following weighted rubric. Be strict and realistic — do not inflate scores. Score each category independently, then sum them.
+
+### 1. Formatting & Structure (20 points)
+Award points for:
+- Clear section headings (Contact, Summary/Objective, Experience, Education, Skills, Projects) → up to 6 pts
+- Consistent date formatting across all entries → up to 4 pts
+- No tables, images, or complex layouts that ATS cannot parse → up to 4 pts
+- Appropriate resume length (1 page for <3 yrs exp, 2 pages for senior) → up to 3 pts
+- Contact info present (email, phone, LinkedIn/GitHub) → up to 3 pts
+
+${keywordSection}
+
+### 3. Work Experience Quality (25 points)
+Award points for:
+- Use of strong action verbs to start bullet points (e.g., "Engineered", "Optimized", "Led") → up to 8 pts
+- Quantified achievements with metrics (%, $, numbers, scale) → up to 10 pts
+- Clear indication of impact and responsibility level → up to 7 pts
+
+### 4. Projects Section (15 points)
+Award points for:
+- At least 2 substantial projects described → up to 5 pts
+- Technologies/stack clearly listed for each project → up to 5 pts
+- Links to GitHub, live demos, or deployment mentioned → up to 5 pts
+
+### 5. Education (10 points)
+Award points for:
+- Degree, institution, graduation year clearly stated → up to 6 pts
+- Relevant coursework, GPA (if strong), or academic achievements → up to 4 pts
+
+### 6. Grammar & Clarity (5 points)
+Award points for:
+- No spelling or grammatical errors → up to 3 pts
+- Clear, concise language (no run-on sentences) → up to 2 pts
+
+Sum all category scores for the final atsScore. Deduct points for red flags such as: employment gaps with no explanation, inconsistent dates, generic objective statements, or personal pronouns ("I", "my").
+
+Focus your qualitative analysis on:
 - Project descriptions, impact, and achievements.
 - Technology choices and missing skills.
 - Use of action verbs and quantified results.
@@ -40,6 +100,15 @@ Focus your analysis on:
 Return EXACTLY ONE valid JSON object with the following structure, and nothing else (no markdown wrappers like \`\`\`json):
 {
   "atsScore": 0-100,
+  "scoreBreakdown": {
+    "formatting": 0-20,
+    "keywords": 0-25,
+    "experience": 0-25,
+    "projects": 0-15,
+    "education": 0-10,
+    "grammar": 0-5
+  },
+  "jobMatchMode": ${hasJD ? "true" : "false"},
   "summary": "Brief 2-3 sentence overall summary",
   "strengths": ["...", "..."],
   "weaknesses": ["...", "..."],
@@ -53,7 +122,8 @@ Return EXACTLY ONE valid JSON object with the following structure, and nothing e
   "overallVerdict": "Final verdict on the resume's quality"
 }
 
-Do NOT hallucinate or invent skills not present in the text.`;
+Do NOT hallucinate or invent skills not present in the text. Be honest and critical — a score above 80 should be genuinely rare and reserved for excellent resumes.`;
+};
 
 export const analyzeResume = async (req, res) => {
   try {
@@ -62,6 +132,7 @@ export const analyzeResume = async (req, res) => {
     }
 
     const { originalname, buffer, mimetype } = req.file;
+    const jobDescription = req.body?.jobDescription?.trim() || null;
     let rawText = "";
 
     if (mimetype === "application/pdf") {
@@ -81,7 +152,11 @@ export const analyzeResume = async (req, res) => {
       return res.status(400).json({ message: "Could not extract text from the file." });
     }
 
-    const prompt = `${RESUME_SYSTEM_PROMPT}\n\n--- RESUME TEXT ---\n${rawText}`;
+    const jdSection = jobDescription
+      ? `\n\n--- JOB DESCRIPTION TO MATCH AGAINST ---\n${jobDescription}`
+      : "";
+
+    const prompt = `${getResumeSystemPrompt(jobDescription)}\n\n--- RESUME TEXT ---\n${rawText}${jdSection}`;
 
     let reviewText = await generateWithFallback(prompt);
     

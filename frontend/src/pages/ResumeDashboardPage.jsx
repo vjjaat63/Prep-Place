@@ -11,6 +11,8 @@ const ResumeDashboardPage = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
+  const [jobDesc, setJobDesc] = useState("");
+  const [showJD, setShowJD] = useState(false);
 
   const { data: resume, isLoading, isError } = useQuery({
     queryKey: ["resume"],
@@ -63,6 +65,9 @@ const ResumeDashboardPage = () => {
     if (!file) return;
     const formData = new FormData();
     formData.append("resume", file);
+    if (jobDesc.trim()) {
+      formData.append("jobDescription", jobDesc.trim());
+    }
     handleUpload(formData);
   };
 
@@ -128,12 +133,32 @@ const ResumeDashboardPage = () => {
                 {isUploading ? (
                   <>
                     <Loader className="w-5 h-5 animate-spin" />
-                    Uploading...
+                    Analyzing...
                   </>
                 ) : (
-                  resume ? "Replace Resume" : "Analyze Resume"
+                  resume ? "Replace & Analyze" : "Analyze Resume"
                 )}
               </button>
+
+              {/* Optional Job Description */}
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowJD(v => !v)}
+                  className="text-sm text-primary hover:underline flex items-center gap-1 w-full justify-center"
+                >
+                  {showJD ? "▲ Hide" : "▼ Add"} Job Description <span className="text-gray-400">(optional, improves accuracy)</span>
+                </button>
+                {showJD && (
+                  <textarea
+                    className="textarea textarea-bordered w-full mt-3 text-sm h-36 resize-none"
+                    placeholder="Paste the job description here to get a more accurate keyword match score..."
+                    value={jobDesc}
+                    onChange={e => setJobDesc(e.target.value)}
+                    disabled={isUploading}
+                  />
+                )}
+              </div>
             </form>
           </div>
         </div>

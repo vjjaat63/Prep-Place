@@ -105,6 +105,11 @@ const ResumeReportPage = () => {
               {atsScore}%
             </div>
             <span className="mt-4 font-bold text-gray-700 tracking-wider">ATS MATCH</span>
+            {analysis.jobMatchMode && (
+              <span className="mt-2 badge badge-primary badge-outline text-xs gap-1">
+                🎯 Job Match Mode
+              </span>
+            )}
           </div>
           
           <div className="flex-1 text-center md:text-left">
@@ -115,6 +120,38 @@ const ResumeReportPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Score Breakdown */}
+        {analysis.scoreBreakdown && (
+          <div className="px-8 md:px-12 pt-8">
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" /> Score Breakdown
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              {[
+                { label: "Formatting & Structure", key: "formatting", max: 20 },
+                { label: analysis.jobMatchMode ? "JD Keyword Match" : "Keywords & Skills", key: "keywords", max: 25 },
+                { label: "Work Experience",         key: "experience", max: 25 },
+                { label: "Projects",                key: "projects",   max: 15 },
+                { label: "Education",               key: "education",  max: 10 },
+                { label: "Grammar & Clarity",       key: "grammar",    max: 5  },
+              ].map(({ label, key, max }) => {
+                const val = analysis.scoreBreakdown[key] ?? 0;
+                const pct = Math.round((val / max) * 100);
+                const color = pct >= 80 ? "progress-success" : pct >= 50 ? "progress-warning" : "progress-error";
+                return (
+                  <div key={key}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{label}</span>
+                      <span className="font-bold">{val}/{max}</span>
+                    </div>
+                    <progress className={`progress ${color} w-full`} value={val} max={max} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Actionable Insights */}
         <div className="p-8 md:p-12">
