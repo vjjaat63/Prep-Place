@@ -30,7 +30,8 @@ const upload = multer({
 
 router.post("/upload", protectRoute, upload.single("resume"), aiRateLimiter, analyzeResume);
 router.get("/", protectRoute, getResume);
-router.get("/download/:id?", protectRoute, downloadResume);
+router.get("/download", protectRoute, downloadResume);
+router.get("/download/:id", protectRoute, downloadResume);
 router.get("/:id", protectRoute, getResumeById);
 router.delete("/:id", protectRoute, deleteResumeAnalysis);
 
