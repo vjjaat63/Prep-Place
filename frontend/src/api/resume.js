@@ -14,8 +14,9 @@ export const getResume = async () => {
   return response.data;
 };
 
-export const downloadResume = async () => {
-  const response = await axiosInstance.get("/resume/download");
+export const downloadResume = async (id = null) => {
+  const endpoint = id ? `/resume/download/${id}` : "/resume/download";
+  const response = await axiosInstance.get(endpoint);
   return response.data; // { url, filename }
 };
 

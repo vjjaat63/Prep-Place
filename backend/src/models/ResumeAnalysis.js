@@ -6,7 +6,11 @@ const resumeAnalysisSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true, // 1:1 Relationship
+    },
+    targetRole: {
+      type: String,
+      required: true,
+      default: "Software Engineer",
     },
     originalName: {
       type: String,

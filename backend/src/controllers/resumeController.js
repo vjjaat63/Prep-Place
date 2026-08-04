@@ -9,12 +9,14 @@ import { ENV } from "../lib/env.js";
 import cloudinary from "../lib/cloudinary.js";
 import stream from "stream";
 
-const uploadToCloudinary = (buffer, originalname) => {
+const uploadToCloudinary = (buffer, originalname, userId) => {
   return new Promise((resolve, reject) => {
+    const safeName = originalname.replace(/[^a-zA-Z0-9_.-]/g, "_");
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         resource_type: "raw",
-        public_id: `resumes/${Date.now()}_${originalname}`,
+        folder: `Prep Place/resumes/${userId}`,
+        public_id: `${Date.now()}_${safeName}`,
       },
       (error, result) => {
         if (error) reject(error);
@@ -30,30 +32,32 @@ const uploadToCloudinary = (buffer, originalname) => {
   });
 };
 
-const getResumeSystemPrompt = (jobDescription = null) => {
+const getResumeSystemPrompt = (targetRole = "Software Engineer", jobDescription = null) => {
   const today = new Date().toISOString().split("T")[0]; // e.g. "2026-08-02"
   const hasJD = jobDescription && jobDescription.trim().length > 0;
 
   const keywordSection = hasJD
     ? `### 2. Keyword & Job Description Match (25 points)
-A job description has been provided. Score this section based on how well the resume matches it:
+A job description has been provided for the role of "${targetRole}". Score this section based on how well the resume matches it:
 - Identify the key required skills, technologies, and qualifications from the job description.
 - Award up to 15 pts for how many of those required keywords/skills appear in the resume.
 - Award up to 5 pts if the candidate's experience level matches the role's requirements.
 - Award up to 5 pts if the resume's language mirrors the job description's terminology.
 - List any important keywords from the JD that are missing from the resume in "missingSkills".`
-    : `### 2. Keyword Density & Skills Section (25 points)
-No job description was provided, so score based on general best practices:
-- Presence of a dedicated Skills section with specific technologies/tools → up to 10 pts
-- Use of industry-standard keywords for the candidate's apparent target role → up to 10 pts
-- Avoidance of vague buzzwords with no supporting evidence (e.g., "hardworking", "team player" alone) → up to 5 pts`;
+    : `### 2. Keyword Density & Role Relevance (25 points)
+No job description was provided, so evaluate strictly against standard requirements for the target role of "${targetRole}":
+- Presence of core skills, tools, and technologies expected for a "${targetRole}" → up to 10 pts
+- Use of industry-standard keywords and terminology for a "${targetRole}" → up to 10 pts
+- Avoidance of vague buzzwords with no supporting evidence → up to 5 pts`;
 
-  return `You are an expert technical recruiter and ATS (Applicant Tracking System) software.
+  return `You are an expert technical recruiter and ATS (Applicant Tracking System) software evaluating a candidate specifically for the position of: "${targetRole}".
 Today's date is ${today}. Use this to correctly determine whether dates on the resume are in the past, present, or future.
 Any date on or before ${today} should be treated as a past or present date — do NOT flag these as future dates.
 Only flag a date as a "future date" if it is strictly after ${today}.
 
-Your task is to analyze the following resume${hasJD ? " against the provided job description" : ""} and return a structured JSON report.
+CRITICAL INSTRUCTION: Tailor all your analysis, suggestions, recommendations, and missing skill lists specifically for the candidate's target job role of "${targetRole}".
+
+Your task is to analyze the following resume${hasJD ? " against the provided job description and target role" : " for the target role"} and return a structured JSON report.
 
 ## ATS SCORE CALCULATION (atsScore: 0–100)
 You MUST compute the atsScore using the following weighted rubric. Be strict and realistic — do not inflate scores. Score each category independently, then sum them.
@@ -72,12 +76,12 @@ ${keywordSection}
 Award points for:
 - Use of strong action verbs to start bullet points (e.g., "Engineered", "Optimized", "Led") → up to 8 pts
 - Quantified achievements with metrics (%, $, numbers, scale) → up to 10 pts
-- Clear indication of impact and responsibility level → up to 7 pts
+- Clear indication of impact and responsibility level relevant to a ${targetRole} → up to 7 pts
 
 ### 4. Projects Section (15 points)
 Award points for:
 - At least 2 substantial projects described → up to 5 pts
-- Technologies/stack clearly listed for each project → up to 5 pts
+- Technologies/stack relevant to a ${targetRole} clearly listed for each project → up to 5 pts
 - Links to GitHub, live demos, or deployment mentioned → up to 5 pts
 
 ### 5. Education (10 points)
@@ -93,9 +97,11 @@ Award points for:
 Sum all category scores for the final atsScore. Deduct points for red flags such as: employment gaps with no explanation, inconsistent dates, generic objective statements, or personal pronouns ("I", "my").
 
 Focus your qualitative analysis on:
-- Project descriptions, impact, and achievements.
-- Technology choices and missing skills.
+- Project descriptions, impact, and achievements tailored to ${targetRole}.
+- Technology choices and specific missing skills/tools required for a successful ${targetRole}.
 - Use of action verbs and quantified results.
+
+In "missingSkills", list specific key technical skills, tools, frameworks, and methodologies required for a ${targetRole} that are missing or under-emphasized in this resume.
 
 Return EXACTLY ONE valid JSON object with the following structure, and nothing else (no markdown wrappers like \`\`\`json):
 {
@@ -109,17 +115,18 @@ Return EXACTLY ONE valid JSON object with the following structure, and nothing e
     "grammar": 0-5
   },
   "jobMatchMode": ${hasJD ? "true" : "false"},
-  "summary": "Brief 2-3 sentence overall summary",
+  "targetRole": "${targetRole}",
+  "summary": "Brief 2-3 sentence overall summary of fit for ${targetRole}",
   "strengths": ["...", "..."],
   "weaknesses": ["...", "..."],
   "missingSkills": ["...", "..."],
   "grammar": ["...", "..."],
-  "projectFeedback": "Detailed feedback on projects...",
-  "experienceFeedback": "Detailed feedback on experience...",
+  "projectFeedback": "Detailed feedback on projects and their relevance to ${targetRole}...",
+  "experienceFeedback": "Detailed feedback on experience and impact for ${targetRole}...",
   "educationFeedback": "Detailed feedback on education...",
   "formattingSuggestions": ["...", "..."],
   "actionableImprovements": ["...", "..."],
-  "overallVerdict": "Final verdict on the resume's quality"
+  "overallVerdict": "Final verdict on the resume's quality for a ${targetRole} position"
 }
 
 Do NOT hallucinate or invent skills not present in the text. Be honest and critical — a score above 80 should be genuinely rare and reserved for excellent resumes.`;
@@ -132,6 +139,7 @@ export const analyzeResume = async (req, res) => {
     }
 
     const { originalname, buffer, mimetype } = req.file;
+    const targetRole = req.body?.targetRole?.trim() || "Software Engineer";
     const jobDescription = req.body?.jobDescription?.trim() || null;
     let rawText = "";
 
@@ -156,13 +164,13 @@ export const analyzeResume = async (req, res) => {
       ? `\n\n--- JOB DESCRIPTION TO MATCH AGAINST ---\n${jobDescription}`
       : "";
 
-    const prompt = `${getResumeSystemPrompt(jobDescription)}\n\n--- RESUME TEXT ---\n${rawText}${jdSection}`;
+    const prompt = `${getResumeSystemPrompt(targetRole, jobDescription)}\n\n--- RESUME TEXT ---\n${rawText}${jdSection}`;
 
     let reviewText = await generateWithFallback(prompt);
     
     // Cleanup possible markdown formatting
-    if (reviewText.startsWith("\`\`\`json")) {
-        reviewText = reviewText.replace(/^\`\`\`json\n/, "").replace(/\n\`\`\`$/, "");
+    if (reviewText.startsWith("```json")) {
+        reviewText = reviewText.replace(/^```json\n/, "").replace(/\n```$/, "");
     }
 
     let parsedAnalysis;
@@ -173,40 +181,26 @@ export const analyzeResume = async (req, res) => {
       return res.status(500).json({ message: "Failed to generate structured report." });
     }
 
-    // Check if user already has a resume
-    const existingResume = await ResumeAnalysis.findOne({ userId: req.user._id });
-    if (existingResume && existingResume.publicId) {
-      try {
-        await cloudinary.uploader.destroy(existingResume.publicId, { resource_type: "raw" });
-        console.log(`Deleted old resume from Cloudinary: ${existingResume.publicId}`);
-      } catch (err) {
-        console.error("Failed to delete old resume from Cloudinary:", err);
-      }
-    }
-
     let cloudinaryData = null;
     try {
-      cloudinaryData = await uploadToCloudinary(buffer, originalname);
+      cloudinaryData = await uploadToCloudinary(buffer, originalname, req.user._id);
     } catch (uploadError) {
       console.error("Failed to upload resume to Cloudinary:", uploadError);
       return res.status(500).json({ message: "Failed to upload resume to Cloudinary" });
     }
 
-    const updatedAnalysis = await ResumeAnalysis.findOneAndUpdate(
-      { userId: req.user._id },
-      {
-        userId: req.user._id,
-        originalName: originalname,
-        resumeUrl: cloudinaryData.secure_url,
-        publicId: cloudinaryData.public_id,
-        fileSize: cloudinaryData.bytes,
-        atsScore: parsedAnalysis.atsScore || 0,
-        analysis: parsedAnalysis,
-      },
-      { new: true, upsert: true }
-    );
+    const newAnalysis = await ResumeAnalysis.create({
+      userId: req.user._id,
+      targetRole,
+      originalName: originalname,
+      resumeUrl: cloudinaryData.secure_url,
+      publicId: cloudinaryData.public_id,
+      fileSize: cloudinaryData.bytes,
+      atsScore: parsedAnalysis.atsScore || 0,
+      analysis: parsedAnalysis,
+    });
 
-    res.status(201).json(updatedAnalysis);
+    res.status(201).json(newAnalysis);
   } catch (error) {
     console.error("Error in analyzeResume:", error);
     res.status(500).json({ message: "Internal server error during analysis" });
@@ -215,11 +209,8 @@ export const analyzeResume = async (req, res) => {
 
 export const getResume = async (req, res) => {
   try {
-    const resume = await ResumeAnalysis.findOne({ userId: req.user._id });
-    if (!resume) {
-      return res.status(404).json({ message: "No resume found" });
-    }
-    res.status(200).json(resume);
+    const resumes = await ResumeAnalysis.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    res.status(200).json(resumes);
   } catch (error) {
     console.error("Error in getResume:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -228,11 +219,21 @@ export const getResume = async (req, res) => {
 
 export const downloadResume = async (req, res) => {
   try {
-    const resume = await ResumeAnalysis.findOne({ userId: req.user._id });
+    const { id } = req.params;
+    let resume;
+    if (id) {
+      resume = await ResumeAnalysis.findById(id);
+    } else {
+      resume = await ResumeAnalysis.findOne({ userId: req.user._id }).sort({ createdAt: -1 });
+    }
+
     if (!resume || !resume.resumeUrl) {
       return res.status(404).json({ message: "No resume found to download" });
     }
-    // Return the secure URL for frontend to handle download
+    if (resume.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
     res.status(200).json({ url: resume.resumeUrl, filename: resume.originalName });
   } catch (error) {
     console.error("Error in downloadResume:", error);

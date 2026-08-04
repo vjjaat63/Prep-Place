@@ -48,7 +48,7 @@ const ResumeReportPage = () => {
   const handleDownload = async (e) => {
     e.preventDefault();
     try {
-      const { url, filename } = await downloadResume();
+      const { url, filename } = await downloadResume(id);
       const response = await fetch(url);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
@@ -64,6 +64,8 @@ const ResumeReportPage = () => {
       toast.error("Failed to securely download resume.");
     }
   };
+
+  const targetRoleName = report.targetRole || analysis.targetRole || "Software Engineer";
 
   return (
     <div className="min-h-screen bg-base-100">
@@ -105,15 +107,18 @@ const ResumeReportPage = () => {
               {atsScore}%
             </div>
             <span className="mt-4 font-bold text-gray-700 tracking-wider">ATS MATCH</span>
+            <span className="mt-2 badge badge-primary font-bold text-xs gap-1 py-3 px-3 shadow-xs">
+              🎯 Target Role: {targetRoleName}
+            </span>
             {analysis.jobMatchMode && (
-              <span className="mt-2 badge badge-primary badge-outline text-xs gap-1">
-                🎯 Job Match Mode
+              <span className="mt-1.5 badge badge-outline badge-secondary text-xs gap-1">
+                📄 Job Description Match
               </span>
             )}
           </div>
           
           <div className="flex-1 text-center md:text-left">
-            <h1 className="text-3xl font-bold mb-3">{report.filename}</h1>
+            <h1 className="text-3xl font-bold mb-3">{report.originalName || report.filename}</h1>
             <p className="text-lg text-gray-600 dark:text-gray-400 italic mb-4">"{analysis.overallVerdict}"</p>
             <div className="p-4 bg-base-100 rounded-xl shadow-sm text-sm leading-relaxed text-gray-700 dark:text-gray-300">
               {analysis.summary}
@@ -130,7 +135,7 @@ const ResumeReportPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               {[
                 { label: "Formatting & Structure", key: "formatting", max: 20 },
-                { label: analysis.jobMatchMode ? "JD Keyword Match" : "Keywords & Skills", key: "keywords", max: 25 },
+                { label: analysis.jobMatchMode ? "JD & Role Keyword Match" : "Role Keyword Alignment", key: "keywords", max: 25 },
                 { label: "Work Experience",         key: "experience", max: 25 },
                 { label: "Projects",                key: "projects",   max: 15 },
                 { label: "Education",               key: "education",  max: 10 },
@@ -161,7 +166,7 @@ const ResumeReportPage = () => {
             {/* Strengths */}
             <div className="bg-success/5 border border-success/20 rounded-2xl p-6">
               <h3 className="font-bold text-success flex items-center gap-2 mb-4 text-xl">
-                <CheckCircle2 className="w-6 h-6" /> Key Strengths
+                <CheckCircle2 className="w-6 h-6" /> Key Strengths for {targetRoleName}
               </h3>
               <ul className="space-y-3">
                 {analysis.strengths?.map((item, i) => (
@@ -192,7 +197,7 @@ const ResumeReportPage = () => {
               {analysis.missingSkills?.length > 0 && (
                 <div className="bg-warning/10 border border-warning/20 rounded-2xl p-6">
                   <h3 className="font-bold text-warning-content flex items-center gap-2 mb-3 text-lg">
-                    <TrendingUp className="w-5 h-5 text-warning" /> Recommended Skills
+                    <TrendingUp className="w-5 h-5 text-warning" /> Recommended Skills for {targetRoleName}
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {analysis.missingSkills.map((skill, i) => (
