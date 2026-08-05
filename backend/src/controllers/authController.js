@@ -5,6 +5,7 @@ import User from "../models/User.js";
 import { upsertStreamUser } from "../lib/stream.js";
 import { ENV } from "../lib/env.js";
 import { sendOTP } from "../lib/email.js";
+import { dispatchEmailJob } from "../queues/emailQueue.js";
 import cloudinary from "../lib/cloudinary.js";
 
 // Utility function to generate JWT
@@ -56,7 +57,7 @@ export const register = async (req, res) => {
       existingUser.otpExpires = otpExpires;
       await existingUser.save();
 
-      await sendOTP(email, otp);
+      await dispatchEmailJob(email, otp);
       return res.status(200).json({ message: "OTP sent to email", email: existingUser.email });
     }
 
@@ -88,7 +89,7 @@ export const register = async (req, res) => {
     });
 
     await newUser.save();
-    await sendOTP(email, otp);
+    await dispatchEmailJob(email, otp);
 
     res.status(201).json({ message: "OTP sent to email", email: newUser.email });
   } catch (error) {
@@ -180,7 +181,7 @@ export const resendOtp = async (req, res) => {
     user.otpExpires = otpExpires;
     await user.save();
 
-    await sendOTP(email, otp);
+    await dispatchEmailJob(email, otp);
 
     res.status(200).json({ message: "OTP resent successfully" });
   } catch (error) {

@@ -16,6 +16,10 @@ import aiRoute from "./routes/aiRoute.js";
 import interviewRoutes from "./routes/interviewRoute.js";
 import resumeRoutes from "./routes/resumeRoute.js";
 
+// Initialize BullMQ Queues & Workers
+import "./queues/emailQueue.js";
+import "./queues/resumeQueue.js";
+
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {

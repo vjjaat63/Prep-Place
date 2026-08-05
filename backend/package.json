@@ -16,6 +16,7 @@
     "@google/generative-ai": "^0.24.1",
     "@stream-io/node-sdk": "^0.7.12",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^6.0.7",
     "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
