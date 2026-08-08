@@ -18,7 +18,7 @@ if (connection) {
         // Worker processing placeholder / handler for heavy processing jobs
         return { success: true, processedAt: new Date().toISOString() };
       },
-      { connection: getBullMQConnection() }
+      { connection }
     );
 
     resumeWorker.on("completed", (job) => {

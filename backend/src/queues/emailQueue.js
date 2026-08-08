@@ -39,7 +39,7 @@ if (connection) {
 
         throw new Error(`Unknown job name '${job.name}' in emailQueue`);
       },
-      { connection: getBullMQConnection() }
+      { connection }
     );
 
     emailWorker.on("completed", (job) => {
