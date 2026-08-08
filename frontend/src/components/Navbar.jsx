@@ -102,15 +102,30 @@ function Navbar() {
           <div className="ml-4 mt-2">
             {user && (
               <div className="dropdown dropdown-end">
-                <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar border border-base-300">
-                  <div className="w-10 rounded-full">
+                <div
+                  tabIndex={0}
+                  role="button"
+                  className={`btn btn-ghost btn-circle avatar p-[2px] transition-all duration-300 ${
+                    user.role === "admin"
+                      ? "bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600 shadow-[0_0_12px_rgba(236,72,153,0.5)] hover:scale-105"
+                      : "border border-base-300"
+                  }`}
+                >
+                  <div className="w-10 rounded-full overflow-hidden bg-base-200">
                     <img alt="User avatar" src={user.imageUrl} />
                   </div>
                 </div>
-                <ul tabIndex={0} className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52 border border-base-300">
+                <ul tabIndex={0} className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-56 border border-base-300">
                   <li className="menu-title px-4 py-2">
-                    <span className="font-semibold text-base-content">{user.fullName}</span>
-                    <span className="text-xs text-base-content/60 block">{user.email}</span>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-semibold text-base-content">{user.fullName}</span>
+                      {user.role === "admin" && (
+                        <span className="badge badge-sm bg-gradient-to-r from-amber-400 to-pink-500 text-white font-bold border-none text-[10px] px-1.5 py-0.5 shadow-sm">
+                          👑 ADMIN
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-base-content/60 block truncate">{user.email}</span>
                   </li>
                   <li>
                     <Link to="/profile" className="hover:bg-base-200 transition-colors mt-2">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { PROBLEMS } from "../data/problems";
+import { problemsApi } from "../api/problems";
 import Navbar from "../components/Navbar";
 
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
@@ -18,32 +18,52 @@ function ProblemPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [currentProblemId, setCurrentProblemId] = useState("two-sum");
+  const [currentProblemId, setCurrentProblemId] = useState(id || "two-sum");
+  const [currentProblem, setCurrentProblem] = useState(null);
+  const [allProblems, setAllProblems] = useState([]);
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
-  const [code, setCode] = useState(PROBLEMS[currentProblemId].starterCode.javascript);
+  const [code, setCode] = useState("");
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
   const [aiReview, setAiReview] = useState(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const currentProblem = PROBLEMS[currentProblemId];
-
-  // update problem when URL param changes
+  // Fetch list of all problems for switcher
   useEffect(() => {
-    if (id && PROBLEMS[id]) {
-      setCurrentProblemId(id);
-      setCode(PROBLEMS[id].starterCode[selectedLanguage]);
+    let isMounted = true;
+    problemsApi.getAllProblems().then((data) => {
+      if (isMounted && data && data.length > 0) {
+        setAllProblems(data.map((p) => ({ ...p, id: p.problemId || p.id || p._id })));
+      }
+    });
+    return () => { isMounted = false; };
+  }, []);
+
+  // Update current problem when URL param changes
+  useEffect(() => {
+    let isMounted = true;
+    const targetId = id || "two-sum";
+    setCurrentProblemId(targetId);
+
+    problemsApi.getProblemById(targetId).then((prob) => {
+      if (!isMounted || !prob) return;
+      setCurrentProblem(prob);
+      const initialCode = prob.starterCode?.[selectedLanguage] || prob.starterCode?.javascript || "";
+      setCode(initialCode);
       setOutput(null);
       setAiReview(null);
       setIsSuccess(false);
-    }
-  }, [id, selectedLanguage]);
+    });
+
+    return () => { isMounted = false; };
+  }, [id]);
 
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
     setSelectedLanguage(newLang);
-    setCode(currentProblem.starterCode[newLang]);
+    const starter = currentProblem?.starterCode?.[newLang] || "";
+    setCode(starter);
     setOutput(null);
     setAiReview(null);
   };
@@ -101,7 +121,7 @@ function ProblemPage() {
     // check if code executed successfully and matches expected output
 
     if (result.success) {
-      const expectedOutput = currentProblem.expectedOutput[selectedLanguage];
+      const expectedOutput = currentProblem?.expectedOutput?.[selectedLanguage] || "";
       const testsPassed = checkIfTestsPassed(result.output, expectedOutput);
 
       if (testsPassed) {
@@ -150,7 +170,7 @@ function ProblemPage() {
               problem={currentProblem}
               currentProblemId={currentProblemId}
               onProblemChange={handleProblemChange}
-              allProblems={Object.values(PROBLEMS)}
+              allProblems={allProblems}
             />
           </Panel>
 

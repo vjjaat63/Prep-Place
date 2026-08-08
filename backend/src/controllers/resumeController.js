@@ -8,6 +8,7 @@ import ResumeAnalysis from "../models/ResumeAnalysis.js";
 import { ENV } from "../lib/env.js";
 import cloudinary from "../lib/cloudinary.js";
 import stream from "stream";
+import { dispatchResumeReportJob } from "../queues/emailQueue.js";
 
 const uploadToCloudinary = (buffer, originalname, userId) => {
   return new Promise((resolve, reject) => {
@@ -199,6 +200,16 @@ export const analyzeResume = async (req, res) => {
       atsScore: parsedAnalysis.atsScore || 0,
       analysis: parsedAnalysis,
     });
+
+    // Enqueue ATS Report email to BullMQ background worker
+    dispatchResumeReportJob({
+      email: req.user.email,
+      userName: req.user.name || "Candidate",
+      targetRole,
+      atsScore: parsedAnalysis.atsScore || 0,
+      analysis: parsedAnalysis,
+      reportId: newAnalysis._id.toString(),
+    }).catch((err) => console.error("Failed to enqueue resume report email:", err));
 
     res.status(201).json(newAnalysis);
   } catch (error) {

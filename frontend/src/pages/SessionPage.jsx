@@ -2,7 +2,7 @@ import { useUser } from "../context/AuthContext";
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions";
-import { PROBLEMS } from "../data/problems";
+import { problemsApi } from "../api/problems";
 import { executeCode } from "../lib/execute";
 import Navbar from "../components/Navbar";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
@@ -22,6 +22,17 @@ function SessionPage() {
   const { user } = useUser();
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [allProblems, setAllProblems] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    problemsApi.getAllProblems().then((data) => {
+      if (isMounted && data) {
+        setAllProblems(data);
+      }
+    });
+    return () => { isMounted = false; };
+  }, []);
 
   const { data: sessionData, isLoading: loadingSession, refetch } = useSessionById(id);
 
@@ -49,7 +60,7 @@ function SessionPage() {
 
   // find the problem data based on active problem title
   const problemData = activeProblemTitle
-    ? Object.values(PROBLEMS).find((p) => p.title === activeProblemTitle)
+    ? allProblems.find((p) => p.title === activeProblemTitle)
     : null;
 
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
@@ -120,7 +131,7 @@ function SessionPage() {
 
     // Also reset language to javascript when problem changes to be safe
     setSelectedLanguage("javascript");
-    const newProblemData = Object.values(PROBLEMS).find((p) => p.title === newProblem);
+    const newProblemData = allProblems.find((p) => p.title === newProblem);
     const starterCode = newProblemData?.starterCode?.["javascript"] || "";
     setCode(starterCode);
     setOutput(null);
@@ -210,8 +221,8 @@ function SessionPage() {
                             value={activeProblemTitle || session?.problem || ""}
                             onChange={handleProblemChange}
                           >
-                            {Object.values(PROBLEMS).map((p) => (
-                              <option key={p.id} value={p.title}>{p.title}</option>
+                            {allProblems.map((p) => (
+                              <option key={p.problemId || p._id || p.id} value={p.title}>{p.title}</option>
                             ))}
                           </select>
                         ) : (

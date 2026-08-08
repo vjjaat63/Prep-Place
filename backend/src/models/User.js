@@ -32,17 +32,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    otp: {
+    role: {
       type: String,
-    },
-    otpExpires: {
-      type: Date,
-    },
-    deleteOtp: {
-      type: String,
-    },
-    deleteOtpExpires: {
-      type: Date,
+      enum: ["user", "admin"],
+      default: "user",
     },
   },
   { timestamps: true } // createdAt, updatedAt

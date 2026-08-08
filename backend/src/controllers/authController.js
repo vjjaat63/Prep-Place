@@ -7,6 +7,7 @@ import { ENV } from "../lib/env.js";
 import { sendOTP } from "../lib/email.js";
 import { dispatchEmailJob } from "../queues/emailQueue.js";
 import cloudinary from "../lib/cloudinary.js";
+import { saveOTP, verifyOTP } from "../lib/otpStore.js";
 
 // Utility function to generate JWT
 const generateToken = (userId) => {
@@ -45,16 +46,15 @@ export const register = async (req, res) => {
 
     const otp = generateOTP();
     const salt = await bcrypt.genSalt(10);
-    const hashedOtp = await bcrypt.hash(otp, salt);
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Save OTP to Redis with 10-minute TTL (EX 600)
+    await saveOTP("verify", email, otp);
+
     if (existingUser && !existingUser.isVerified) {
-      // User exists but is unverified, overwrite their data and resend OTP
+      // User exists but is unverified, overwrite their credentials and resend OTP
       existingUser.name = name;
       existingUser.password = hashedPassword;
-      existingUser.otp = hashedOtp;
-      existingUser.otpExpires = otpExpires;
       await existingUser.save();
 
       await dispatchEmailJob(email, otp);
@@ -73,7 +73,6 @@ export const register = async (req, res) => {
         profileImage = uploadResponse.secure_url;
       } catch (error) {
         console.error("Cloudinary upload error in register:", error);
-        // Continue with default dicebear image if upload fails
       }
     }
 
@@ -84,8 +83,6 @@ export const register = async (req, res) => {
       clerkId: generatedClerkId,
       profileImage,
       isVerified: false,
-      otp: hashedOtp,
-      otpExpires,
     });
 
     await newUser.save();
@@ -116,19 +113,13 @@ export const verifyEmail = async (req, res) => {
       return res.status(400).json({ message: "User is already verified" });
     }
 
-    if (user.otpExpires < new Date()) {
-      return res.status(400).json({ message: "OTP has expired" });
-    }
-
-    const isOtpValid = await bcrypt.compare(otp, user.otp);
-
-    if (!isOtpValid) {
-      return res.status(400).json({ message: "Invalid OTP" });
+    // Verify OTP from Redis (TTL auto-expires after 10 mins)
+    const result = await verifyOTP("verify", email, otp);
+    if (!result.valid) {
+      return res.status(400).json({ message: result.message });
     }
 
     user.isVerified = true;
-    user.otp = undefined;
-    user.otpExpires = undefined;
     await user.save();
 
     // Upsert user in Stream only after successful verification
@@ -146,6 +137,7 @@ export const verifyEmail = async (req, res) => {
       email: user.email,
       profileImage: user.profileImage,
       clerkId: user.clerkId,
+      role: user.role,
       token,
     });
   } catch (error) {
@@ -173,14 +165,9 @@ export const resendOtp = async (req, res) => {
     }
 
     const otp = generateOTP();
-    const salt = await bcrypt.genSalt(10);
-    const hashedOtp = await bcrypt.hash(otp, salt);
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    user.otp = hashedOtp;
-    user.otpExpires = otpExpires;
-    await user.save();
-
+    // Save fresh OTP to Redis with 10-minute TTL
+    await saveOTP("verify", email, otp);
     await dispatchEmailJob(email, otp);
 
     res.status(200).json({ message: "OTP resent successfully" });
@@ -199,7 +186,6 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // if user was created using Clerk, they won't have a password in our DB
     if (!user.password) {
       return res.status(400).json({ message: "This account was created with Clerk. Please reset your password or create a new account." });
     }
@@ -222,6 +208,7 @@ export const login = async (req, res) => {
       email: user.email,
       profileImage: user.profileImage,
       clerkId: user.clerkId,
+      role: user.role,
       token,
     });
   } catch (error) {
@@ -282,6 +269,7 @@ export const updateProfile = async (req, res) => {
       email: user.email,
       profileImage: user.profileImage,
       clerkId: user.clerkId,
+      role: user.role,
     });
   } catch (error) {
     console.error("Error in updateProfile controller:", error.message);
@@ -306,14 +294,11 @@ export const requestAccountDeletion = async (req, res) => {
     }
 
     const otp = generateOTP();
-    const salt = await bcrypt.genSalt(10);
-    const hashedOtp = await bcrypt.hash(otp, salt);
 
-    user.deleteOtp = hashedOtp;
-    user.deleteOtpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-    await user.save();
-
+    // Save deletion OTP to Redis with 10-minute TTL
+    await saveOTP("delete", user._id.toString(), otp);
     await sendOTP(user.email, otp);
+
     res.status(200).json({ message: "OTP sent to verify account deletion" });
   } catch (error) {
     console.error("Error in requestAccountDeletion:", error.message);
@@ -330,13 +315,10 @@ export const confirmAccountDeletion = async (req, res) => {
       return res.status(400).json({ message: "OTP is required" });
     }
 
-    if (!user.deleteOtp || user.deleteOtpExpires < new Date()) {
-      return res.status(400).json({ message: "OTP has expired or was not requested" });
-    }
-
-    const isOtpValid = await bcrypt.compare(otp, user.deleteOtp);
-    if (!isOtpValid) {
-      return res.status(400).json({ message: "Invalid OTP" });
+    // Verify deletion OTP from Redis (TTL auto-expires after 10 mins)
+    const result = await verifyOTP("delete", user._id.toString(), otp);
+    if (!result.valid) {
+      return res.status(400).json({ message: result.message });
     }
 
     // OTP valid, delete account

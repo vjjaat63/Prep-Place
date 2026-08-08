@@ -15,6 +15,7 @@ import executeRoute from "./routes/executeRoute.js";
 import aiRoute from "./routes/aiRoute.js";
 import interviewRoutes from "./routes/interviewRoute.js";
 import resumeRoutes from "./routes/resumeRoute.js";
+import problemRoutes from "./routes/problemRoute.js";
 
 // Initialize BullMQ Queues & Workers
 import "./queues/emailQueue.js";
@@ -39,7 +40,7 @@ app.use(cookieParser());
 app.use(cors({ 
   origin: ENV.CLIENT_URL, 
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key']
 }));
 
 app.use("/api/auth", authRoutes);
@@ -49,6 +50,7 @@ app.use("/api/execute", executeRoute);
 app.use("/api/ai", aiRoute);
 app.use("/api/interviews", interviewRoutes);
 app.use("/api/resume", resumeRoutes);
+app.use("/api/problems", problemRoutes);
 
 app.get("/health", (req, res) => {
   res.status(200).json({ msg: "api is up and running" });
@@ -58,7 +60,7 @@ app.get("/health", (req, res) => {
 if (ENV.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
-  app.get("/{*any}", (req, res) => {
+  app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
   });
 }

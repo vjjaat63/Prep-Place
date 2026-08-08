@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
         fullName: dbUser.name,
         imageUrl: dbUser.profileImage,
         email: dbUser.email,
+        role: dbUser.role || "user",
       });
       setIsSignedIn(true);
     } catch (error) {
@@ -55,6 +56,7 @@ export const AuthProvider = ({ children }) => {
         fullName: dbUser.name,
         imageUrl: dbUser.profileImage,
         email: dbUser.email,
+        role: dbUser.role || "user",
       });
       setIsSignedIn(true);
       toast.success("Logged in successfully");
@@ -92,6 +94,7 @@ export const AuthProvider = ({ children }) => {
         fullName: dbUser.name,
         imageUrl: dbUser.profileImage,
         email: dbUser.email,
+        role: dbUser.role || "user",
       });
       setIsSignedIn(true);
       toast.success("Email verified and logged in successfully");
@@ -136,6 +139,7 @@ export const AuthProvider = ({ children }) => {
         fullName: dbUser.name,
         imageUrl: dbUser.profileImage,
         email: dbUser.email,
+        role: dbUser.role || "user",
       });
       toast.success("Profile updated successfully");
       return true;

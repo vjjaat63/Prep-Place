@@ -76,13 +76,26 @@ function ProfilePage() {
                 {/* Profile Image Upload */}
                 <div className="flex flex-col items-center gap-4">
                   <div className="relative">
-                    <div className="size-32 rounded-full bg-base-200 border-4 border-base-100 shadow-md flex items-center justify-center overflow-hidden">
-                      {profileImage ? (
-                        <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-                      ) : (
-                        <UserIcon className="size-16 text-base-content/30" />
-                      )}
+                    <div
+                      className={`size-32 rounded-full flex items-center justify-center overflow-hidden transition-all duration-300 ${
+                        user?.role === "admin"
+                          ? "p-1 bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600 shadow-[0_0_20px_rgba(236,72,153,0.5)]"
+                          : "border-4 border-base-100 shadow-md bg-base-200"
+                      }`}
+                    >
+                      <div className="w-full h-full rounded-full overflow-hidden bg-base-200 flex items-center justify-center">
+                        {profileImage ? (
+                          <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                          <UserIcon className="size-16 text-base-content/30" />
+                        )}
+                      </div>
                     </div>
+                    {user?.role === "admin" && (
+                      <span className="absolute -top-1 -right-1 badge badge-sm bg-gradient-to-r from-amber-400 to-pink-500 text-white font-bold border-none px-2 py-1 shadow-md">
+                        👑 ADMIN
+                      </span>
+                    )}
                     <label className="absolute bottom-0 right-0 bg-primary text-white p-3 rounded-full cursor-pointer shadow-lg hover:scale-110 transition-transform">
                       <CameraIcon className="size-5" />
                       <input 

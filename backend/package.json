@@ -4,7 +4,10 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "build": "npm install && npm run build --prefix ../frontend",
+    "seed:problems": "node src/seed/seedProblems.js",
+    "make:admin": "node src/seed/makeAdmin.js"
   },
   "type": "module",
   "keywords": [],

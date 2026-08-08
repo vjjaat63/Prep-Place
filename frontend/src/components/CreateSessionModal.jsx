@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { Code2Icon, LoaderIcon, PlusIcon } from "lucide-react";
-import { PROBLEMS } from "../data/problems";
+import { problemsApi } from "../api/problems";
 
 function CreateSessionModal({
   isOpen,
@@ -9,7 +10,20 @@ function CreateSessionModal({
   onCreateRoom,
   isCreating,
 }) {
-  const problems = Object.values(PROBLEMS);
+  const [problems, setProblems] = useState([]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let isMounted = true;
+    problemsApi.getAllProblems().then((data) => {
+      if (isMounted && data) {
+        setProblems(data);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -32,7 +46,7 @@ function CreateSessionModal({
               onChange={(e) => {
                 const selectedProblem = problems.find((p) => p.title === e.target.value);
                 setRoomConfig({
-                  difficulty: selectedProblem.difficulty,
+                  difficulty: selectedProblem?.difficulty || "Easy",
                   problem: e.target.value,
                 });
               }}
@@ -42,7 +56,7 @@ function CreateSessionModal({
               </option>
 
               {problems.map((problem) => (
-                <option key={problem.id} value={problem.title}>
+                <option key={problem.problemId || problem._id || problem.id} value={problem.title}>
                   {problem.title} ({problem.difficulty})
                 </option>
               ))}

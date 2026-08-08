@@ -14,6 +14,7 @@
 ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Gemini AI](https://img.shields.io/badge/Gemini_AI-4285F4?style=for-the-badge&logo=google&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=JSON%20web%20tokens&logoColor=white)
@@ -44,10 +45,14 @@ Technical interviews are stressful, and preparing for them often requires juggli
   - Space Complexity Analysis
   - Optimization Suggestions
   - Best Practices
-- **Robust Authentication**
-  A custom secure JWT authentication flow backed by MongoDB, featuring email OTP verification via Brevo API and secure password hashing with bcryptjs.
+- **Robust Authentication & Role-Based Security**
+  A custom secure JWT authentication flow backed by MongoDB, featuring email OTP verification via Brevo API, secure password hashing with bcryptjs, and Admin Role-Based Access Control (RBAC).
+- **MongoDB Problem Database & Redis Cache-Aside**
+  Coding practice problems are stored persistently in MongoDB and cached in Redis with a 1-hour TTL, serving high-speed responses and purging outdated cache automatically on admin updates.
+- **Role-Tailored Resume Analyzer & Analysis History**
+  Upload PDF/DOCX resumes, select a target job role (or use quick-select role chips), and get role-focused ATS scoring, targeted skill recommendations, section breakdown, and complete past analysis history with secure cloud file storage (`Prep Place/resumes/<userId>/`).
 - **Profile Management**
-  Users can manage their personal profiles and seamlessly upload avatars, leveraging Cloudinary for fast and secure image delivery.
+  Users can manage their personal profiles and seamlessly upload avatars, leveraging Cloudinary for fast and secure image delivery (`Prep Place/avatars/`).
 - **Solo Practice Mode**
   A dedicated environment filled with coding problems for individual practice when you aren't in a live interview room.
 
@@ -66,6 +71,8 @@ Technical interviews are stressful, and preparing for them often requires juggli
 - **Express** — Minimalist web framework for handling RESTful routes.
 - **MongoDB** — NoSQL database for flexible data storage.
 - **Mongoose** — Elegant MongoDB object modeling for Node.js.
+- **Redis (ioredis)** — High-speed in-memory key-value cache and rate limiter.
+- **BullMQ** — Distributed background job queue powered by Redis.
 - **Google Gemini API** — Generative AI for automated code analysis and feedback.
 - **JDoodle API** — Remote compiler API used for securely executing user code.
 - **Cloudinary** — Cloud storage service for handling user profile images.
@@ -79,7 +86,7 @@ Technical interviews are stressful, and preparing for them often requires juggli
           │
     React Frontend
           │
-   Express Backend
+   Express Backend ──► Redis Cache / BullMQ
   ┌───────┼─────────┐
   │       │         │
   ▼       ▼         ▼
@@ -110,6 +117,7 @@ NODE_ENV=development
 DB_URL=your_mongodb_connection_url
 CLIENT_URL=http://localhost:5173
 JWT_SECRET=your_jwt_secret
+REDIS_URL=your_redis_connection_url
 GEMINI_API_KEY=your_gemini_api_key
 BREVO_API_KEY=your_brevo_api_key
 BREVO_SENDER_EMAIL=your_verified_gmail_address
@@ -141,6 +149,7 @@ VITE_STREAM_API_KEY=your_stream_api_key
    ```bash
    cd backend
    npm install
+   npm run seed:problems # Seeds coding problems into MongoDB and initializes Redis cache
    npm run dev
    ```
 
@@ -154,12 +163,13 @@ VITE_STREAM_API_KEY=your_stream_api_key
 ## 🔌 API Overview
 
 - `/api/auth` - Authentication, registration, and OTP verification (via Brevo API)
+- `/api/problems` - Coding problems management (MongoDB stored + Redis Cache-Aside, Admin write routes)
 - `/api/chat` - Real-time chat functionality
 - `/api/sessions` - Collaborative session management
 - `/api/execute` - Proxies requests to JDoodle to securely compile and execute code
 - `/api/ai` - Integrates with Google Gemini API for AI code reviews and feedback
 - `/api/interviews` - Manages mock interviews and history
-- `/api/resume` - Analyzes uploaded resumes and provides an ATS score
+- `/api/resume` - Role-tailored ATS resume evaluation, Cloudinary asset streaming, history tracking, and download management
 
 ## 🧗 Challenges Faced
 
