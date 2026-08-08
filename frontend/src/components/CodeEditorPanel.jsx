@@ -87,10 +87,10 @@ function CodeEditorPanel({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-base-100 border-b border-base-300">
         <div className="flex items-center gap-3">
-          {LANGUAGE_CONFIG[selectedLanguage].icon && (
+          {LANGUAGE_CONFIG[selectedLanguage]?.icon && (
             <img
               src={LANGUAGE_CONFIG[selectedLanguage].icon}
-              alt={LANGUAGE_CONFIG[selectedLanguage].name}
+              alt={LANGUAGE_CONFIG[selectedLanguage]?.name || "Language"}
               className="size-6"
             />
           )}
@@ -147,7 +147,7 @@ function CodeEditorPanel({
       <div className="flex-1">
         <Editor
           height="100%"
-          language={LANGUAGE_CONFIG[selectedLanguage].monacoLang}
+          language={LANGUAGE_CONFIG[selectedLanguage]?.monacoLang || "javascript"}
           value={code}
           onChange={onCodeChange}
           onMount={handleEditorDidMount}
