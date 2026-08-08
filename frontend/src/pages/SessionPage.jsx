@@ -23,6 +23,7 @@ function SessionPage() {
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
   const [allProblems, setAllProblems] = useState([]);
+  const [fullProblemData, setFullProblemData] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -58,10 +59,26 @@ function SessionPage() {
     }
   }, [session, activeProblemTitle]);
 
-  // find the problem data based on active problem title
-  const problemData = activeProblemTitle
-    ? allProblems.find((p) => p.title === activeProblemTitle)
-    : null;
+  // Fetch full problem details (with starterCode, examples, constraints) whenever activeProblemTitle changes
+  useEffect(() => {
+    if (!activeProblemTitle) return;
+    let isMounted = true;
+
+    const summaryItem = allProblems.find(
+      (p) => p.title === activeProblemTitle || p.problemId === activeProblemTitle || p._id === activeProblemTitle
+    );
+    const targetId = summaryItem?.problemId || summaryItem?.id || summaryItem?._id || activeProblemTitle;
+
+    problemsApi.getProblemById(targetId).then((fullProb) => {
+      if (isMounted && fullProb) {
+        setFullProblemData(fullProb);
+      }
+    });
+
+    return () => { isMounted = false; };
+  }, [activeProblemTitle, allProblems]);
+
+  const problemData = fullProblemData || (activeProblemTitle ? allProblems.find((p) => p.title === activeProblemTitle) : null);
 
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [code, setCode] = useState("");
@@ -90,14 +107,11 @@ function SessionPage() {
     } else {
       joinSessionMutation.mutate({ id }, { onSuccess: refetch });
     }
-
-    // remove the joinSessionMutation, refetch from dependencies to avoid infinite loop
   }, [session, user, loadingSession, isHost, isParticipant, id, navigate]);
 
   // redirect the "participant" when session ends
   useEffect(() => {
     if (!session || loadingSession) return;
-
     if (session.status === "completed") navigate("/dashboard");
   }, [session, loadingSession, navigate]);
 
@@ -121,7 +135,7 @@ function SessionPage() {
     socket.emit("code_change", { sessionId: id, code: starterCode });
   };
 
-  const handleProblemChange = (e) => {
+  const handleProblemChange = async (e) => {
     const newProblem = e.target.value;
     setActiveProblemTitle(newProblem);
 
@@ -129,11 +143,19 @@ function SessionPage() {
     setIsSolved(false);
     setTimerKey(prev => prev + 1);
 
-    // Also reset language to javascript when problem changes to be safe
+    // Reset language to javascript when problem changes
     setSelectedLanguage("javascript");
-    const newProblemData = allProblems.find((p) => p.title === newProblem);
-    const starterCode = newProblemData?.starterCode?.["javascript"] || "";
+
+    const summaryItem = allProblems.find(
+      (p) => p.title === newProblem || p.problemId === newProblem || p._id === newProblem
+    );
+    const targetId = summaryItem?.problemId || summaryItem?.id || summaryItem?._id || newProblem;
+    const fullData = await problemsApi.getProblemById(targetId);
+
+    const starterCode = fullData?.starterCode?.["javascript"] || "";
+    if (fullData) setFullProblemData(fullData);
     setCode(starterCode);
+    hasInitializedCode.current = true;
     setOutput(null);
 
     socket.emit("problem_change", { sessionId: id, problemTitle: newProblem });
@@ -157,7 +179,6 @@ function SessionPage() {
 
   const handleEndSession = () => {
     if (confirm("Are you sure you want to end this session? All participants will be notified.")) {
-      // this will navigate the HOST to dashboard
       endSessionMutation.mutate(id, { onSuccess: () => navigate("/dashboard") });
     }
   };
@@ -246,8 +267,9 @@ function SessionPage() {
                             session?.difficulty
                           )}`}
                         >
-                          {session?.difficulty.slice(0, 1).toUpperCase() +
-                            session?.difficulty.slice(1) || "Easy"}
+                          {session?.difficulty
+                            ? session.difficulty.slice(0, 1).toUpperCase() + session.difficulty.slice(1)
+                            : "Easy"}
                         </span>
                         {isHost && session?.status === "active" && (
                           <button
@@ -276,12 +298,17 @@ function SessionPage() {
                       <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
                         <h2 className="text-xl font-bold mb-4 text-base-content">Description</h2>
                         <div className="space-y-3 text-base leading-relaxed">
-                          <p className="text-base-content/90">{problemData.description.text}</p>
-                          {problemData.description.notes?.map((note, idx) => (
-                            <p key={idx} className="text-base-content/90">
-                              {note}
-                            </p>
-                          ))}
+                          <p className="text-base-content/90">
+                            {typeof problemData.description === "object"
+                              ? problemData.description.text
+                              : problemData.description}
+                          </p>
+                          {Array.isArray(problemData.description?.notes) &&
+                            problemData.description.notes.map((note, idx) => (
+                              <p key={idx} className="text-base-content/90">
+                                {note}
+                              </p>
+                            ))}
                         </div>
                       </div>
                     )}
