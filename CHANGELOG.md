@@ -1,12 +1,48 @@
 # Changelog
 
-All notable changes to the **Prep Place** project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to the **Prep Place** project will be documented in this file, ordered chronologically from initial launch to the latest release (v1.0.0 ➔ v1.4.0).
 
 ---
 
-## [1.4.0] - 2026-08-08
+## [1.0.0] - 2026-07-01 (Initial Launch)
+
+### Added
+- **Core Platform Launch**: Initial release of the Prep Place full-stack application.
+- **Real-Time Collaboration**: Embedded Monaco Editor with Socket.IO state synchronization for real-time code sharing across interview rooms.
+- **Video & Audio Calling**: Integrated Stream SDK for 1-on-1 video calling, audio, and text chat.
+- **Secure Code Execution**: Created Express proxy pipeline to safely compile and run code in 4+ languages via the JDoodle API.
+- **Authentication System**: Implemented JWT Bearer token authentication, bcrypt password hashing, and user profile management.
+
+---
+
+## [1.1.0] - 2026-07-15
+
+### Added
+- **AI Mock Interviewer**: Integrated Google Gemini API for automated mock technical interviews, follow-up questions, and performance scoring.
+- **14-Model Fallback Engine**: Built `generateWithFallback` wrapper pooling quotas across Flash, Pro, Lite, and 1.5/2.0 models to maintain 99.9% availability during free-tier API rate limits.
+- **Audio & Speech Controls**: Added voice audio toggle for AI mock interview sessions.
+
+---
+
+## [1.2.0] - 2026-07-28
+
+### Added
+- **Role-Tailored ATS Resume Analyzer**: Added PDF/DOCX file parsing (`pdf-parse`, `mammoth`) and custom Gemini AI prompts for job-role matching and ATS scoring.
+- **Cloud Storage Integration**: Configured Cloudinary integration for streaming user avatars (`Prep Place/avatars`) and uploaded resumes (`Prep Place/resumes/<userId>`).
+- **Analysis History & Download Support**: Enabled persistent storage of resume reports in MongoDB (`ResumeAnalysis` schema) with past report retrieval and secure Cloudinary download links.
+
+---
+
+## [1.3.0] - 2026-08-05
+
+### Added
+- **BullMQ Background Message Queues**: Integrated BullMQ and Redis connection pools (`emailQueue.js`, `resumeQueue.js`) for non-blocking background job processing.
+- **Transactional Email Service**: Switched to Brevo HTTP API for transactional OTP delivery.
+- **Rate Limiting**: Integrated `rate-limiter-flexible` backed by Redis to protect auth and AI endpoints against brute-force attacks.
+
+---
+
+## [1.4.0] - 2026-08-08 (Latest Version)
 
 ### Added
 - **Redis Cache-Aside Problem Caching**: Implemented a Redis Cache-Aside pattern for coding practice problems (`problems:all:summary` and `problem:<id>`) with 1-hour TTL (`EX 3600`) and automatic cache invalidation on admin edits.
@@ -20,41 +56,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Performance & Security
 - Reduced `GET /api/problems` response payload by **97.5% (415 KB → ~10 KB)**.
 - Reduced problem API latency from **1.34 seconds to <10ms**.
-
----
-
-## [1.3.0] - 2026-08-05
-
-### Added
-- **BullMQ Background Message Queues**: Integrated BullMQ and Redis connection pools (`emailQueue.js`, `resumeQueue.js`) for non-blocking background job processing.
-- **Transactional Email Service**: Switched to Brevo HTTP API for transactional OTP delivery.
-- **Rate Limiting**: Integrated `rate-limiter-flexible` backed by Redis to protect auth and AI endpoints against brute-force attacks.
-
----
-
-## [1.2.0] - 2026-07-28
-
-### Added
-- **Role-Tailored ATS Resume Analyzer**: Added PDF/DOCX file parsing (`pdf-parse`, `mammoth`) and custom Gemini AI prompts for job-role matching and ATS scoring.
-- **Cloud Storage Integration**: Configured Cloudinary integration for streaming user avatars (`Prep Place/avatars`) and uploaded resumes (`Prep Place/resumes/<userId>`).
-- **Analysis History & Download Support**: Enabled persistent storage of resume reports in MongoDB (`ResumeAnalysis` schema) with past report retrieval and secure Cloudinary download links.
-
----
-
-## [1.1.0] - 2026-07-15
-
-### Added
-- **AI Mock Interviewer**: Integrated Google Gemini API for automated mock technical interviews, follow-up questions, and performance scoring.
-- **14-Model Fallback Engine**: Built `generateWithFallback` wrapper pooling quotas across Flash, Pro, Lite, and 1.5/2.0 models to maintain 99.9% availability during free-tier API rate limits.
-- **Audio & Speech Controls**: Added voice audio toggle for AI mock interview sessions.
-
----
-
-## [1.0.0] - 2026-07-01
-
-### Added
-- **Core Platform Launch**: Initial release of Prep Place full-stack application.
-- **Real-Time Collaboration**: Embedded Monaco Editor with Socket.IO state synchronization for real-time code sharing across interview rooms.
-- **Video & Audio Calling**: Integrated Stream SDK for 1-on-1 video calling, audio, and text chat.
-- **Secure Code Execution**: Created Express proxy pipeline to safely compile and run code in 4+ languages via the JDoodle API.
-- **Authentication System**: Implemented JWT Bearer token authentication, bcrypt password hashing, and user profile management.
