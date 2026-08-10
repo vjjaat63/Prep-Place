@@ -1,6 +1,6 @@
 import { Queue, Worker } from "bullmq";
 import { getBullMQConnection } from "../lib/redis.js";
-import { sendOTP, sendResumeReportEmail } from "../lib/email.js";
+import { sendOTP, sendResumeReportEmail, sendInterviewReportEmail } from "../lib/email.js";
 
 let emailQueue = null;
 let emailWorker = null;
@@ -34,6 +34,23 @@ if (connection) {
             reportId,
           });
           if (!success) throw new Error(`Failed to send ATS report email to ${email}`);
+          return { success: true };
+        }
+
+        if (job.name === "send-interview-report") {
+          const { email, userName, category, difficulty, duration, score, feedback, interviewId } = job.data;
+          console.log(`[BullMQ Worker] Processing 'send-interview-report' job for ${email} (${category})`);
+          const success = await sendInterviewReportEmail({
+            email,
+            userName,
+            category,
+            difficulty,
+            duration,
+            score,
+            feedback,
+            interviewId,
+          });
+          if (!success) throw new Error(`Failed to send Interview report email to ${email}`);
           return { success: true };
         }
 
@@ -118,4 +135,35 @@ export const dispatchResumeReportJob = async ({ email, userName, targetRole, ats
   return await sendResumeReportEmail({ email, userName, targetRole, atsScore, analysis, reportId });
 };
 
+/**
+ * Dispatch AI Mock Interview Assessment Report email job to BullMQ with graceful direct fallback.
+ */
+export const dispatchInterviewReportJob = async ({ email, userName, category, difficulty, duration, score, feedback, interviewId }) => {
+  if (emailQueue) {
+    try {
+      await emailQueue.add(
+        "send-interview-report",
+        { email, userName, category, difficulty, duration, score, feedback, interviewId },
+        {
+          attempts: 3,
+          backoff: {
+            type: "exponential",
+            delay: 3000,
+          },
+          removeOnComplete: true,
+        }
+      );
+      console.log(`[BullMQ Queue] Enqueued 'send-interview-report' job for ${email} (${category})`);
+      return true;
+    } catch (err) {
+      console.warn("⚠️ Enqueue failed, falling back to direct sendInterviewReportEmail:", err.message);
+    }
+  }
+
+  // Fallback if queue/redis is unavailable
+  console.log(`[Fallback] Sending Mock Interview Report email directly to ${email}`);
+  return await sendInterviewReportEmail({ email, userName, category, difficulty, duration, score, feedback, interviewId });
+};
+
 export { emailQueue, emailWorker };
+

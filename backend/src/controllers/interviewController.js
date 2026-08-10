@@ -1,6 +1,19 @@
 import { generateWithFallback } from "../lib/gemini.js";
 import Interview from "../models/Interview.js";
+import Topic from "../models/Topic.js";
+import { dispatchInterviewReportJob } from "../queues/emailQueue.js";
 import { ENV } from "../lib/env.js";
+
+const DEFAULT_TOPICS = [
+  "Data Structures & Algorithms",
+  "Object Oriented Programming",
+  "Database Management Systems",
+  "Operating Systems",
+  "Computer Networks",
+  "System Design",
+  "Machine Learning",
+  "HR Interview",
+];
 
 const INTERVIEW_SYSTEM_PROMPT = `You are an expert technical interviewer at a top-tier tech company.
 Your goal is to conduct a professional mock interview with a candidate.
@@ -146,6 +159,20 @@ Return EXACTLY ONE valid JSON object with the following structure, and nothing e
     interview.feedback = parsedFeedback.feedback;
     await interview.save();
 
+    // Dispatch background email job to user
+    if (req.user && req.user.email) {
+      dispatchInterviewReportJob({
+        email: req.user.email,
+        userName: req.user.fullName || req.user.name || req.user.email.split("@")[0],
+        category: interview.category,
+        difficulty: interview.difficulty,
+        duration: interview.duration,
+        score: interview.score,
+        feedback: interview.feedback,
+        interviewId: interview._id,
+      }).catch((err) => console.error("Failed to enqueue interview report email:", err));
+    }
+
     res.status(200).json({ score: interview.score, feedback: interview.feedback });
 
   } catch (error) {
@@ -193,3 +220,74 @@ export const deleteInterview = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// ================= TOPIC MANAGEMENT CONTROLLERS =================
+
+export const getInterviewTopics = async (req, res) => {
+  try {
+    let topics = await Topic.find({}).sort({ createdAt: 1 });
+
+    // Seed default topics if collection is empty
+    if (topics.length === 0) {
+      console.log("Seeding default interview topics...");
+      const defaultDocs = DEFAULT_TOPICS.map((name) => ({
+        name,
+        description: `Mock interview sessions for ${name}`,
+        isDefault: true,
+      }));
+      topics = await Topic.insertMany(defaultDocs);
+    }
+
+    res.status(200).json(topics);
+  } catch (error) {
+    console.error("Error in getInterviewTopics:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const addInterviewTopic = async (req, res) => {
+  try {
+    const { name, description } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "Topic name is required" });
+    }
+
+    const trimmedName = name.trim();
+    const existing = await Topic.findOne({ name: { $regex: new RegExp(`^${trimmedName}$`, "i") } });
+    if (existing) {
+      return res.status(400).json({ message: "Topic with this name already exists" });
+    }
+
+    const newTopic = new Topic({
+      name: trimmedName,
+      description: description?.trim() || "",
+      isDefault: false,
+      createdBy: req.user._id,
+    });
+
+    await newTopic.save();
+    res.status(201).json(newTopic);
+  } catch (error) {
+    console.error("Error in addInterviewTopic:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const deleteInterviewTopic = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const topic = await Topic.findById(id);
+    if (!topic) {
+      return res.status(404).json({ message: "Topic not found" });
+    }
+
+    await Topic.findByIdAndDelete(id);
+    res.status(200).json({ message: "Topic deleted successfully" });
+  } catch (error) {
+    console.error("Error in deleteInterviewTopic:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+

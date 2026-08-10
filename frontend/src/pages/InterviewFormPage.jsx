@@ -1,12 +1,16 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { createInterview } from "../api/interview";
-import { Brain, ArrowRight, Loader } from "lucide-react";
+import { createInterview, getInterviewTopics, addInterviewTopic, deleteInterviewTopic } from "../api/interview";
+import { useUser } from "../context/AuthContext";
+import { Brain, ArrowRight, Loader, Plus, Trash2, ShieldCheck, X } from "lucide-react";
 import toast from "react-hot-toast";
 import Navbar from "../components/Navbar";
 
-const CATEGORIES = [
+const DIFFICULTIES = ["Easy", "Medium", "Hard"];
+const DURATIONS = [10, 15, 30, 45]; // in minutes
+
+const DEFAULT_CATEGORIES = [
   "Data Structures & Algorithms",
   "Object Oriented Programming",
   "Database Management Systems",
@@ -17,18 +21,41 @@ const CATEGORIES = [
   "HR Interview",
 ];
 
-const DIFFICULTIES = ["Easy", "Medium", "Hard"];
-const DURATIONS = [10, 15, 30, 45]; // in minutes
-
 const InterviewFormPage = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useUser();
+  const isAdmin = user?.role === "admin";
+
   const [formData, setFormData] = useState({
-    category: CATEGORIES[0],
+    category: DEFAULT_CATEGORIES[0],
     difficulty: "Medium",
     duration: 30,
     mode: "Text",
   });
 
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [newTopicName, setNewTopicName] = useState("");
+  const [newTopicDesc, setNewTopicDesc] = useState("");
+
+  // Fetch topics dynamically from database
+  const { data: topicsData, isLoading: isLoadingTopics } = useQuery({
+    queryKey: ["interviewTopics"],
+    queryFn: getInterviewTopics,
+  });
+
+  const categories = Array.isArray(topicsData) && topicsData.length > 0
+    ? topicsData.map((t) => t.name)
+    : DEFAULT_CATEGORIES;
+
+  // Set initial category once topics are loaded
+  useEffect(() => {
+    if (categories.length > 0 && !categories.includes(formData.category)) {
+      setFormData((prev) => ({ ...prev, category: categories[0] }));
+    }
+  }, [topicsData]);
+
+  // Start interview mutation
   const { mutate: startInterview, isPending } = useMutation({
     mutationFn: createInterview,
     onSuccess: (data) => {
@@ -40,9 +67,48 @@ const InterviewFormPage = () => {
     },
   });
 
+  // Admin add topic mutation
+  const { mutate: createTopic, isPending: isCreatingTopic } = useMutation({
+    mutationFn: addInterviewTopic,
+    onSuccess: (newTopic) => {
+      toast.success(`Topic "${newTopic.name}" added successfully!`);
+      setNewTopicName("");
+      setNewTopicDesc("");
+      setShowAdminModal(false);
+      setFormData((prev) => ({ ...prev, category: newTopic.name }));
+      queryClient.invalidateQueries(["interviewTopics"]);
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to add topic");
+    },
+  });
+
+  // Admin delete topic mutation
+  const { mutate: removeTopic } = useMutation({
+    mutationFn: deleteInterviewTopic,
+    onSuccess: () => {
+      toast.success("Topic deleted successfully!");
+      queryClient.invalidateQueries(["interviewTopics"]);
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to delete topic");
+    },
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.category) {
+      return toast.error("Please select an interview topic.");
+    }
     startInterview(formData);
+  };
+
+  const handleAddTopicSubmit = (e) => {
+    e.preventDefault();
+    if (!newTopicName.trim()) {
+      return toast.error("Please enter a topic name.");
+    }
+    createTopic({ name: newTopicName, description: newTopicDesc });
   };
 
   return (
@@ -59,20 +125,37 @@ const InterviewFormPage = () => {
 
         <form onSubmit={handleSubmit} className="bg-base-100 p-8 rounded-2xl shadow-xl border border-base-200">
 
-          {/* Category */}
+          {/* Category Selection + Admin Add Option */}
           <div className="form-control w-full mb-6">
-            <label className="label">
-              <span className="label-text font-semibold text-lg">Interview Topic</span>
-            </label>
-            <select
-              className="select select-bordered w-full text-base"
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            >
-              {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+            <div className="flex justify-between items-center mb-2">
+              <label className="label-text font-semibold text-lg">Interview Topic</label>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setShowAdminModal(true)}
+                  className="btn btn-xs btn-outline btn-primary gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Topic
+                </button>
+              )}
+            </div>
+
+            {isLoadingTopics ? (
+              <div className="flex items-center gap-2 p-3 bg-base-200 rounded-lg text-sm">
+                <Loader className="w-4 h-4 animate-spin text-primary" /> Loading interview topics...
+              </div>
+            ) : (
+              <select
+                className="select select-bordered w-full text-base"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              >
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Difficulty */}
@@ -153,6 +236,80 @@ const InterviewFormPage = () => {
           </button>
 
         </form>
+
+        {/* Admin Manage Topics Modal */}
+        {showAdminModal && (
+          <div className="modal modal-open">
+            <div className="modal-box max-w-lg">
+              <div className="flex justify-between items-center border-b border-base-200 pb-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-primary" />
+                  <h3 className="font-bold text-lg">Admin: Add Mock Interview Topic</h3>
+                </div>
+                <button
+                  onClick={() => setShowAdminModal(false)}
+                  className="btn btn-sm btn-circle btn-ghost"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Add Topic Form */}
+              <form onSubmit={handleAddTopicSubmit} className="space-y-4 mb-6">
+                <div>
+                  <label className="label font-medium text-sm">Topic Name *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Next.js & Server Components"
+                    className="input input-bordered w-full"
+                    value={newTopicName}
+                    onChange={(e) => setNewTopicName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="label font-medium text-sm">Description (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="Brief summary of what this topic covers"
+                    className="input input-bordered w-full"
+                    value={newTopicDesc}
+                    onChange={(e) => setNewTopicDesc(e.target.value)}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isCreatingTopic}
+                  className="btn btn-primary w-full gap-2"
+                >
+                  {isCreatingTopic ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  Add Topic
+                </button>
+              </form>
+
+              {/* List existing custom topics for deletion */}
+              {Array.isArray(topicsData) && topicsData.some((t) => !t.isDefault) && (
+                <div>
+                  <h4 className="font-semibold text-xs uppercase tracking-wider text-base-content/60 mb-2">Custom Added Topics</h4>
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    {topicsData.filter((t) => !t.isDefault).map((topic) => (
+                      <div key={topic._id} className="flex justify-between items-center p-2 bg-base-200 rounded-lg text-sm">
+                        <span>{topic.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeTopic(topic._id)}
+                          className="btn btn-ghost btn-xs text-error hover:bg-error/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

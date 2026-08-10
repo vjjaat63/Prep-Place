@@ -29,3 +29,19 @@ export const deleteInterview = async (id) => {
   const res = await axiosInstance.delete(`/interviews/${id}`);
   return res.data;
 };
+
+export const getInterviewTopics = async () => {
+  const res = await axiosInstance.get("/interviews/topics");
+  return res.data;
+};
+
+export const addInterviewTopic = async (topicData) => {
+  const res = await axiosInstance.post("/interviews/topics", topicData);
+  return res.data;
+};
+
+export const deleteInterviewTopic = async (id) => {
+  const res = await axiosInstance.delete(`/interviews/topics/${id}`);
+  return res.data;
+};
+
