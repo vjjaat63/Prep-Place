@@ -14,9 +14,8 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: function () {
-        // Only require password if the user doesn't have an existing clerkId
-        // This helps transition existing users without breaking them
-        return !this.clerkId;
+        // Password required only for local email/password users without clerkId or OAuth IDs
+        return !this.clerkId && !this.googleId && !this.githubId;
       },
     },
     profileImage: {
@@ -25,8 +24,22 @@ const userSchema = new mongoose.Schema(
     },
     clerkId: {
       type: String,
-      // Removed unique: true and required: true to allow new users with generated UUIDs
-      // and prevent issues with existing users
+      // Allowed for compatibility with Stream and existing Clerk users
+    },
+    googleId: {
+      type: String,
+      sparse: true,
+      unique: true,
+    },
+    githubId: {
+      type: String,
+      sparse: true,
+      unique: true,
+    },
+    provider: {
+      type: String,
+      enum: ["local", "google", "github", "clerk"],
+      default: "local",
     },
     isVerified: {
       type: Boolean,

@@ -20,6 +20,7 @@ import problemRoutes from "./routes/problemRoute.js";
 // Initialize BullMQ Queues & Workers
 import "./queues/emailQueue.js";
 import "./queues/resumeQueue.js";
+import "./queues/streamQueue.js";
 
 const app = express();
 const httpServer = createServer(app);

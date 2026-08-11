@@ -1,8 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import User from "../models/User.js";
-import { upsertStreamUser } from "../lib/stream.js";
+import { dispatchStreamUserUpsert } from "../queues/streamQueue.js";
 import { ENV } from "../lib/env.js";
 import { sendOTP } from "../lib/email.js";
 import { dispatchEmailJob } from "../queues/emailQueue.js";
@@ -122,8 +123,8 @@ export const verifyEmail = async (req, res) => {
     user.isVerified = true;
     await user.save();
 
-    // Upsert user in Stream only after successful verification
-    await upsertStreamUser({
+    // Upsert user in Stream via BullMQ background queue
+    await dispatchStreamUserUpsert({
       id: user.clerkId.toString(),
       name: user.name,
       image: user.profileImage,
@@ -256,8 +257,8 @@ export const updateProfile = async (req, res) => {
 
     await user.save();
 
-    // Update Stream user
-    await upsertStreamUser({
+    // Update Stream user via BullMQ background queue
+    await dispatchStreamUserUpsert({
       id: user.clerkId.toString(),
       name: user.name,
       image: user.profileImage,
@@ -328,5 +329,297 @@ export const confirmAccountDeletion = async (req, res) => {
   } catch (error) {
     console.error("Error in confirmAccountDeletion:", error.message);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+// ==========================================
+// GOOGLE OAUTH CONTROLLERS
+// ==========================================
+
+export const googleAuth = (req, res) => {
+  try {
+    if (!ENV.GOOGLE_CLIENT_ID) {
+      return res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("Google OAuth is not configured on the server")}`);
+    }
+
+    const state = crypto.randomBytes(32).toString("hex");
+    res.cookie("oauth_state", state, {
+      httpOnly: true,
+      maxAge: 10 * 60 * 1000, // 10 minutes
+      sameSite: "lax",
+      secure: ENV.NODE_ENV === "production",
+    });
+
+    const redirectUri = `${req.protocol}://${req.get("host")}/api/auth/google/callback`;
+    const googleUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    googleUrl.searchParams.set("client_id", ENV.GOOGLE_CLIENT_ID);
+    googleUrl.searchParams.set("redirect_uri", redirectUri);
+    googleUrl.searchParams.set("response_type", "code");
+    googleUrl.searchParams.set("scope", "openid email profile");
+    googleUrl.searchParams.set("state", state);
+    googleUrl.searchParams.set("prompt", "select_account");
+
+    res.redirect(googleUrl.toString());
+  } catch (error) {
+    console.error("Error initiating Google Auth:", error.message);
+    res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("Failed to initiate Google authentication")}`);
+  }
+};
+
+export const googleCallback = async (req, res) => {
+  try {
+    const { code, state, error: googleError } = req.query;
+    const storedState = req.cookies?.oauth_state;
+
+    res.clearCookie("oauth_state");
+
+    if (googleError) {
+      return res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("Google login was cancelled or denied")}`);
+    }
+
+    if (!code || !state || !storedState || state !== storedState) {
+      return res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("Invalid authentication state. Please try again.")}`);
+    }
+
+    const redirectUri = `${req.protocol}://${req.get("host")}/api/auth/google/callback`;
+
+    // Exchange code for Google tokens
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: ENV.GOOGLE_CLIENT_ID,
+        client_secret: ENV.GOOGLE_CLIENT_SECRET,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+
+    if (!tokenResponse.ok || !tokenData.access_token) {
+      console.error("Google Token Error:", tokenData);
+      return res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("Failed to exchange code with Google")}`);
+    }
+
+    // Fetch user profile from Google
+    const profileResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+
+    const profile = await profileResponse.json();
+
+    if (!profile || !profile.email) {
+      return res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("Unable to retrieve email from Google profile")}`);
+    }
+
+    // Find or create user
+    let user = await User.findOne({ googleId: profile.id });
+
+    if (!user) {
+      user = await User.findOne({ email: profile.email.toLowerCase() });
+
+      if (user) {
+        // Account exists with matching email - link Google ID
+        user.googleId = profile.id;
+        user.isVerified = true;
+        if (!user.profileImage) {
+          user.profileImage = profile.picture || `https://api.dicebear.com/9.x/initials/svg?seed=${user.name}`;
+        }
+        if (!user.clerkId) {
+          user.clerkId = uuidv4();
+        }
+        await user.save();
+      } else {
+        // Create new user via Google OAuth
+        const generatedClerkId = uuidv4();
+        user = new User({
+          name: profile.name || "Google User",
+          email: profile.email.toLowerCase(),
+          profileImage: profile.picture || `https://api.dicebear.com/9.x/initials/svg?seed=${profile.name}`,
+          clerkId: generatedClerkId,
+          googleId: profile.id,
+          provider: "google",
+          isVerified: true,
+        });
+
+        await user.save();
+
+        // Queue Stream user creation in background
+        await dispatchStreamUserUpsert({
+          id: generatedClerkId,
+          name: user.name,
+          image: user.profileImage,
+        });
+      }
+    }
+
+    const token = generateToken(user._id);
+
+    res.redirect(`${ENV.CLIENT_URL}/auth/callback?token=${token}`);
+  } catch (error) {
+    console.error("Error in Google Callback:", error.message);
+    res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("Google authentication failed. Please try again.")}`);
+  }
+};
+
+// ==========================================
+// GITHUB OAUTH CONTROLLERS
+// ==========================================
+
+export const githubAuth = (req, res) => {
+  try {
+    if (!ENV.GITHUB_CLIENT_ID) {
+      return res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("GitHub OAuth is not configured on the server")}`);
+    }
+
+    const state = crypto.randomBytes(32).toString("hex");
+    res.cookie("oauth_state", state, {
+      httpOnly: true,
+      maxAge: 10 * 60 * 1000,
+      sameSite: "lax",
+      secure: ENV.NODE_ENV === "production",
+    });
+
+    const redirectUri = `${req.protocol}://${req.get("host")}/api/auth/github/callback`;
+    const githubUrl = new URL("https://github.com/login/oauth/authorize");
+    githubUrl.searchParams.set("client_id", ENV.GITHUB_CLIENT_ID);
+    githubUrl.searchParams.set("redirect_uri", redirectUri);
+    githubUrl.searchParams.set("scope", "user:email");
+    githubUrl.searchParams.set("state", state);
+
+    res.redirect(githubUrl.toString());
+  } catch (error) {
+    console.error("Error initiating GitHub Auth:", error.message);
+    res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("Failed to initiate GitHub authentication")}`);
+  }
+};
+
+export const githubCallback = async (req, res) => {
+  try {
+    const { code, state, error: githubError } = req.query;
+    const storedState = req.cookies?.oauth_state;
+
+    res.clearCookie("oauth_state");
+
+    if (githubError) {
+      return res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("GitHub login was cancelled or denied")}`);
+    }
+
+    if (!code || !state || !storedState || state !== storedState) {
+      return res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("Invalid authentication state. Please try again.")}`);
+    }
+
+    const redirectUri = `${req.protocol}://${req.get("host")}/api/auth/github/callback`;
+
+    // Exchange code for GitHub access token
+    const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        client_id: ENV.GITHUB_CLIENT_ID,
+        client_secret: ENV.GITHUB_CLIENT_SECRET,
+        code,
+        redirect_uri: redirectUri,
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+
+    if (!tokenResponse.ok || !tokenData.access_token) {
+      console.error("GitHub Token Error:", tokenData);
+      return res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("Failed to exchange code with GitHub")}`);
+    }
+
+    // Fetch user profile from GitHub
+    const profileResponse = await fetch("https://api.github.com/user", {
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+        "User-Agent": "PrepPlace-App",
+      },
+    });
+
+    const profile = await profileResponse.json();
+
+    if (!profile || !profile.id) {
+      return res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("Unable to retrieve GitHub profile")}`);
+    }
+
+    // Determine email (fetch from /user/emails if primary email is private)
+    let email = profile.email;
+
+    if (!email) {
+      const emailsResponse = await fetch("https://api.github.com/user/emails", {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+          "User-Agent": "PrepPlace-App",
+        },
+      });
+
+      if (emailsResponse.ok) {
+        const emails = await emailsResponse.json();
+        const primaryEmail = emails.find((e) => e.primary && e.verified) || emails.find((e) => e.verified) || emails[0];
+        email = primaryEmail ? primaryEmail.email : null;
+      }
+    }
+
+    if (!email) {
+      return res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("No verified email found on your GitHub account")}`);
+    }
+
+    const githubIdStr = profile.id.toString();
+
+    // Find or create user
+    let user = await User.findOne({ githubId: githubIdStr });
+
+    if (!user) {
+      user = await User.findOne({ email: email.toLowerCase() });
+
+      if (user) {
+        // Account exists with matching email - link GitHub ID
+        user.githubId = githubIdStr;
+        user.isVerified = true;
+        if (!user.profileImage) {
+          user.profileImage = profile.avatar_url || `https://api.dicebear.com/9.x/initials/svg?seed=${user.name}`;
+        }
+        if (!user.clerkId) {
+          user.clerkId = uuidv4();
+        }
+        await user.save();
+      } else {
+        // Create new user via GitHub OAuth
+        const generatedClerkId = uuidv4();
+        const displayName = profile.name || profile.login || "GitHub User";
+        user = new User({
+          name: displayName,
+          email: email.toLowerCase(),
+          profileImage: profile.avatar_url || `https://api.dicebear.com/9.x/initials/svg?seed=${displayName}`,
+          clerkId: generatedClerkId,
+          githubId: githubIdStr,
+          provider: "github",
+          isVerified: true,
+        });
+
+        await user.save();
+
+        // Queue Stream user creation in background
+        await dispatchStreamUserUpsert({
+          id: generatedClerkId,
+          name: user.name,
+          image: user.profileImage,
+        });
+      }
+    }
+
+    const token = generateToken(user._id);
+
+    res.redirect(`${ENV.CLIENT_URL}/auth/callback?token=${token}`);
+  } catch (error) {
+    console.error("Error in GitHub Callback:", error.message);
+    res.redirect(`${ENV.CLIENT_URL}/login?error=${encodeURIComponent("GitHub authentication failed. Please try again.")}`);
   }
 };

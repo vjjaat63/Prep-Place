@@ -10,6 +10,7 @@ import SessionPage from "./pages/SessionPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
+import OAuthCallbackPage from "./pages/OAuthCallbackPage";
 import ProfilePage from "./pages/ProfilePage";
 import InterviewDashboardPage from "./pages/InterviewDashboardPage";
 import InterviewFormPage from "./pages/InterviewFormPage";
@@ -30,6 +31,7 @@ function App() {
         <Route path="/login" element={!isSignedIn ? <LoginPage /> : <Navigate to={"/dashboard"} />} />
         <Route path="/signup" element={!isSignedIn ? <SignupPage /> : <Navigate to={"/dashboard"} />} />
         <Route path="/verify-email" element={!isSignedIn ? <VerifyEmailPage /> : <Navigate to={"/dashboard"} />} />
+        <Route path="/auth/callback" element={<OAuthCallbackPage />} />
 
         <Route path="/dashboard" element={isSignedIn ? <DashboardPage /> : <Navigate to={"/"} />} />
         <Route path="/profile" element={isSignedIn ? <ProfilePage /> : <Navigate to={"/"} />} />
