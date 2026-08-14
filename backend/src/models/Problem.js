@@ -16,10 +16,14 @@ const problemSchema = new mongoose.Schema(
       required: true,
       unique: true,
       index: true, // e.g. "two-sum", "reverse-string"
+      trim: true,
+      maxlength: [100, "problemId cannot exceed 100 characters"],
     },
     title: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: [200, "Title cannot exceed 200 characters"],
     },
     difficulty: {
       type: String,
@@ -29,9 +33,16 @@ const problemSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: [100, "Category cannot exceed 100 characters"],
     },
     description: {
-      text: { type: String, required: true },
+      text: { 
+        type: String, 
+        required: true, 
+        trim: true, 
+        maxlength: [20000, "Description cannot exceed 20,000 characters"] 
+      },
       notes: [{ type: String }],
     },
     examples: [exampleSchema],

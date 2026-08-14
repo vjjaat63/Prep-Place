@@ -5,6 +5,8 @@ const sessionSchema = new mongoose.Schema(
     problem: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: [200, "Problem title cannot exceed 200 characters"],
     },
     difficulty: {
       type: String,

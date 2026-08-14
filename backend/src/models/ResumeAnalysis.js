@@ -11,18 +11,26 @@ const resumeAnalysisSchema = new mongoose.Schema(
       type: String,
       required: true,
       default: "Software Engineer",
+      trim: true,
+      maxlength: [100, "Target role cannot exceed 100 characters"],
     },
     originalName: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: [255, "Original file name cannot exceed 255 characters"],
     },
     resumeUrl: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: [1000, "Resume URL cannot exceed 1000 characters"],
     },
     publicId: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: [255, "Public ID cannot exceed 255 characters"],
     },
     fileSize: {
       type: Number,

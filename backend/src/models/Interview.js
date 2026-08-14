@@ -9,6 +9,8 @@ const messageSchema = new mongoose.Schema({
   content: {
     type: String,
     required: true,
+    trim: true,
+    maxlength: [10000, "Content cannot exceed 10,000 characters"],
   },
   timestamp: {
     type: Date,
@@ -27,6 +29,8 @@ const interviewSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: [100, "Category cannot exceed 100 characters"],
     },
     difficulty: {
       type: String,

@@ -100,3 +100,16 @@ All notable changes and git commits to the **Prep Place** project, ordered chron
 - `9d82ad2` - Created initial `CHANGELOG.md` document.
 - `53b9d12` - Reordered release history chronologically from v1.0.0 to v1.4.0.
 - `CURRENT` - Reorganized `CHANGELOG.md` detailing every individual commit from initial `0356d8f` to the latest release!
+
+---
+
+## [1.5.0] - 2026-08-11 (Google & GitHub OAuth 2.0 & Stream Queue Optimization)
+
+- `7a8c3d9` - Integrated Google OAuth 2.0 and GitHub OAuth 2.0 authentication with CSRF state protection, automatic account linking for verified emails, and custom JWT token generation. Added provider sign-in buttons to `LoginPage.jsx` and `SignupPage.jsx`, and created `OAuthCallbackPage.jsx`. Added `streamQueue.js` to BullMQ to process `upsertStreamUser` network tasks in the background with automatic fallback. Updated `User.js`, `env.js`, `authController.js`, `authRoute.js`, `.env.example`, and `README.md`.
+
+---
+
+## [1.5.1] - 2026-08-14 (Latest Version - Mongoose Schema String Length Validation & Security Hardening)
+
+- `SECURITY` - Hardened all 6 Mongoose backend models (`User.js`, `Interview.js`, `Problem.js`, `ResumeAnalysis.js`, `Session.js`, `Topic.js`) with explicit `maxlength`, `minlength`, and `trim: true` string validation constraints. Prevents database storage bloat, unbounded payload attacks (e.g. 100k+ character strings), and UI layout crashes. Updated `docs/05_database_design.md`.
+

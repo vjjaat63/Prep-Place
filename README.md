@@ -15,6 +15,8 @@
 ![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![Google OAuth](https://img.shields.io/badge/Google_OAuth-4285F4?style=for-the-badge&logo=google&logoColor=white)
+![GitHub OAuth](https://img.shields.io/badge/GitHub_OAuth-181717?style=for-the-badge&logo=github&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Gemini AI](https://img.shields.io/badge/Gemini_AI-4285F4?style=for-the-badge&logo=google&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=JSON%20web%20tokens&logoColor=white)
@@ -45,8 +47,10 @@ Technical interviews are stressful, and preparing for them often requires juggli
   - Space Complexity Analysis
   - Optimization Suggestions
   - Best Practices
-- **Robust Authentication & Role-Based Security**
-  A custom secure JWT authentication flow backed by MongoDB, featuring email OTP verification via Brevo API, secure password hashing with bcryptjs, and Admin Role-Based Access Control (RBAC).
+- **Robust Authentication, OAuth 2.0 & Role-Based Security**
+  Supports Google OAuth 2.0 and GitHub OAuth 2.0 social sign-in with automatic account linking for verified emails and CSRF state validation. Also includes custom secure JWT authentication flow backed by MongoDB, featuring email OTP verification via Brevo API, secure password hashing with bcryptjs, and Admin Role-Based Access Control (RBAC).
+- **Background Job Queue Optimization (BullMQ)**
+  Asynchronous tasks like email dispatching, resume processing, and Stream user synchronization (`streamQueue`) are offloaded to BullMQ workers powered by Redis, ensuring ultra-fast HTTP response times for end users.
 - **MongoDB Problem Database & Redis Cache-Aside**
   Coding practice problems are stored persistently in MongoDB and cached in Redis with a 1-hour TTL, serving high-speed responses and purging outdated cache automatically on admin updates.
 - **Role-Tailored Resume Analyzer & Analysis History**
@@ -69,10 +73,10 @@ Technical interviews are stressful, and preparing for them often requires juggli
 ### Backend
 - **Node.js** — High-performance JavaScript runtime for the backend API.
 - **Express** — Minimalist web framework for handling RESTful routes.
-- **MongoDB** — NoSQL database for flexible data storage.
-- **Mongoose** — Elegant MongoDB object modeling for Node.js.
+- **MongoDB & Mongoose** — NoSQL database and Object Data Modeling (ODM).
+- **OAuth 2.0 (Google & GitHub)** — Secure third-party authentication with account linking.
 - **Redis (ioredis)** — High-speed in-memory key-value cache and rate limiter.
-- **BullMQ** — Distributed background job queue powered by Redis.
+- **BullMQ** — Distributed background job queue for processing emails, resumes, and Stream user syncs.
 - **Google Gemini API** — Generative AI for automated code analysis and feedback.
 - **JDoodle API** — Remote compiler API used for securely executing user code.
 - **Cloudinary** — Cloud storage service for handling user profile images.
@@ -128,6 +132,14 @@ STREAM_API_KEY=your_stream_api_key
 STREAM_API_SECRET=your_stream_api_secret
 JDOODLE_CLIENT_ID=your_jdoodle_client_id
 JDOODLE_CLIENT_SECRET=your_jdoodle_client_secret
+
+# Google OAuth Credentials
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+
+# GitHub OAuth Credentials
+GITHUB_CLIENT_ID=your_github_client_id_here
+GITHUB_CLIENT_SECRET=your_github_client_secret_here
 ```
 
 ### Frontend (`frontend/.env`)
@@ -162,7 +174,7 @@ VITE_STREAM_API_KEY=your_stream_api_key
 
 ## 🔌 API Overview
 
-- `/api/auth` - Authentication, registration, and OTP verification (via Brevo API)
+- `/api/auth` - Email/password registration, login, Google & GitHub OAuth 2.0 endpoints, profile updates, and OTP verification
 - `/api/problems` - Coding problems management (MongoDB stored + Redis Cache-Aside, Admin write routes)
 - `/api/chat` - Real-time chat functionality
 - `/api/sessions` - Collaborative session management
