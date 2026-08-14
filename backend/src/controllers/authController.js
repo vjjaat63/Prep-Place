@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
+import validator from "validator";
 import User from "../models/User.js";
 import { dispatchStreamUserUpsert } from "../queues/streamQueue.js";
 import { ENV } from "../lib/env.js";
@@ -22,10 +23,9 @@ const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// Utility function to validate email format
+// Utility function to validate email format using validator library
 const isValidEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return typeof email === "string" && emailRegex.test(email.trim());
+  return typeof email === "string" && validator.isEmail(email.trim());
 };
 
 export const register = async (req, res, next) => {
@@ -40,13 +40,8 @@ export const register = async (req, res, next) => {
       return res.status(400).json({ message: "Please enter a valid email address" });
     }
 
-    if (password.length < 8) {
-      return res.status(400).json({ message: "Password must be at least 8 characters long" });
-    }
-
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
-    if (!passwordRegex.test(password)) {
-      return res.status(400).json({ message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special symbol" });
+    if (!validator.isStrongPassword(password, { minLength: 8, minLowercase: 1, minUppercase: 1, minNumbers: 1, minSymbols: 1 })) {
+      return res.status(400).json({ message: "Password must contain at least 8 characters, including one uppercase letter, one lowercase letter, one number, and one special symbol" });
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
