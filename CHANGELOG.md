@@ -109,7 +109,14 @@ All notable changes and git commits to the **Prep Place** project, ordered chron
 
 ---
 
-## [1.5.1] - 2026-08-14 (Latest Version - Mongoose Schema String Length Validation & Security Hardening)
+## [1.5.1] - 2026-08-14 (Mongoose Schema String Length Validation & Security Hardening)
 
 - `SECURITY` - Hardened all 6 Mongoose backend models (`User.js`, `Interview.js`, `Problem.js`, `ResumeAnalysis.js`, `Session.js`, `Topic.js`) with explicit `maxlength`, `minlength`, and `trim: true` string validation constraints. Prevents database storage bloat, unbounded payload attacks (e.g. 100k+ character strings), and UI layout crashes. Updated `docs/05_database_design.md`.
+
+---
+
+## [1.5.2] - 2026-08-14 (Latest Version - Centralized Error Handling, Stream ID Refactoring & Naming Audit)
+
+- `REFACTOR` - Refactored legacy `clerkId` references across backend models, controllers, frontend contexts, and pages to `streamUserId` for Stream SDK user mapping. Created centralized global error handling middleware (`errorHandler.js`) in Express to format Mongoose validation errors, duplicate key errors (code 11000), and CastErrors cleanly into HTTP 400 Bad Request JSON responses. Standardized backend route file naming (`chatRoutes.js` -> `chatRoute.js`) and updated root `package.json` name to `prep-place`. Reverified all documentation files (`docs/05_database_design.md`, `CHANGELOG.md`, `README.md`) for 100% consistency.
+
 
