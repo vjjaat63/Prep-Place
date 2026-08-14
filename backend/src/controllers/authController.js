@@ -22,7 +22,7 @@ const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
   try {
     const { name, email, password, profileImage: customProfileImage } = req.body;
 
@@ -63,7 +63,7 @@ export const register = async (req, res) => {
     }
 
     // New user
-    const generatedClerkId = uuidv4();
+    const generatedStreamUserId = uuidv4();
     let profileImage = `https://api.dicebear.com/9.x/initials/svg?seed=${name}`;
 
     if (customProfileImage) {
@@ -81,7 +81,7 @@ export const register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      clerkId: generatedClerkId,
+      streamUserId: generatedStreamUserId,
       profileImage,
       isVerified: false,
     });
@@ -92,7 +92,7 @@ export const register = async (req, res) => {
     res.status(201).json({ message: "OTP sent to email", email: newUser.email });
   } catch (error) {
     console.error("Error in signup controller:", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
+    next(error);
   }
 };
 
@@ -125,7 +125,7 @@ export const verifyEmail = async (req, res) => {
 
     // Upsert user in Stream via BullMQ background queue
     await dispatchStreamUserUpsert({
-      id: user.clerkId.toString(),
+      id: (user.streamUserId || user._id).toString(),
       name: user.name,
       image: user.profileImage,
     });
@@ -137,7 +137,7 @@ export const verifyEmail = async (req, res) => {
       name: user.name,
       email: user.email,
       profileImage: user.profileImage,
-      clerkId: user.clerkId,
+      streamUserId: user.streamUserId,
       role: user.role,
       token,
     });
@@ -188,7 +188,7 @@ export const login = async (req, res) => {
     }
 
     if (!user.password) {
-      return res.status(400).json({ message: "This account was created with Clerk. Please reset your password or create a new account." });
+      return res.status(400).json({ message: "This account was created using Google or GitHub sign-in. Please sign in with your social provider." });
     }
 
     if (!user.isVerified) {
@@ -208,7 +208,7 @@ export const login = async (req, res) => {
       name: user.name,
       email: user.email,
       profileImage: user.profileImage,
-      clerkId: user.clerkId,
+      streamUserId: user.streamUserId,
       role: user.role,
       token,
     });
@@ -259,7 +259,7 @@ export const updateProfile = async (req, res) => {
 
     // Update Stream user via BullMQ background queue
     await dispatchStreamUserUpsert({
-      id: user.clerkId.toString(),
+      id: (user.streamUserId || user._id).toString(),
       name: user.name,
       image: user.profileImage,
     });
@@ -269,7 +269,7 @@ export const updateProfile = async (req, res) => {
       name: user.name,
       email: user.email,
       profileImage: user.profileImage,
-      clerkId: user.clerkId,
+      streamUserId: user.streamUserId,
       role: user.role,
     });
   } catch (error) {
@@ -427,18 +427,18 @@ export const googleCallback = async (req, res) => {
         if (!user.profileImage) {
           user.profileImage = profile.picture || `https://api.dicebear.com/9.x/initials/svg?seed=${user.name}`;
         }
-        if (!user.clerkId) {
-          user.clerkId = uuidv4();
+        if (!user.streamUserId) {
+          user.streamUserId = uuidv4();
         }
         await user.save();
       } else {
         // Create new user via Google OAuth
-        const generatedClerkId = uuidv4();
+        const generatedStreamUserId = uuidv4();
         user = new User({
           name: profile.name || "Google User",
           email: profile.email.toLowerCase(),
           profileImage: profile.picture || `https://api.dicebear.com/9.x/initials/svg?seed=${profile.name}`,
-          clerkId: generatedClerkId,
+          streamUserId: generatedStreamUserId,
           googleId: profile.id,
           provider: "google",
           isVerified: true,
@@ -448,7 +448,7 @@ export const googleCallback = async (req, res) => {
 
         // Queue Stream user creation in background
         await dispatchStreamUserUpsert({
-          id: generatedClerkId,
+          id: generatedStreamUserId,
           name: user.name,
           image: user.profileImage,
         });
@@ -586,19 +586,19 @@ export const githubCallback = async (req, res) => {
         if (!user.profileImage) {
           user.profileImage = profile.avatar_url || `https://api.dicebear.com/9.x/initials/svg?seed=${user.name}`;
         }
-        if (!user.clerkId) {
-          user.clerkId = uuidv4();
+        if (!user.streamUserId) {
+          user.streamUserId = uuidv4();
         }
         await user.save();
       } else {
         // Create new user via GitHub OAuth
-        const generatedClerkId = uuidv4();
+        const generatedStreamUserId = uuidv4();
         const displayName = profile.name || profile.login || "GitHub User";
         user = new User({
           name: displayName,
           email: email.toLowerCase(),
           profileImage: profile.avatar_url || `https://api.dicebear.com/9.x/initials/svg?seed=${displayName}`,
-          clerkId: generatedClerkId,
+          streamUserId: generatedStreamUserId,
           githubId: githubIdStr,
           provider: "github",
           isVerified: true,
@@ -608,7 +608,7 @@ export const githubCallback = async (req, res) => {
 
         // Queue Stream user creation in background
         await dispatchStreamUserUpsert({
-          id: generatedClerkId,
+          id: generatedStreamUserId,
           name: user.name,
           image: user.profileImage,
         });

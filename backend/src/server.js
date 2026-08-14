@@ -9,13 +9,14 @@ import { ENV } from "./lib/env.js";
 import { connectDB } from "./lib/db.js";
 
 import authRoutes from "./routes/authRoute.js";
-import chatRoutes from "./routes/chatRoutes.js";
+import chatRoutes from "./routes/chatRoute.js";
 import sessionRoutes from "./routes/sessionRoute.js";
 import executeRoute from "./routes/executeRoute.js";
 import aiRoute from "./routes/aiRoute.js";
 import interviewRoutes from "./routes/interviewRoute.js";
 import resumeRoutes from "./routes/resumeRoute.js";
 import problemRoutes from "./routes/problemRoute.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 // Initialize BullMQ Queues & Workers
 import "./queues/emailQueue.js";
@@ -52,6 +53,9 @@ app.use("/api/ai", aiRoute);
 app.use("/api/interviews", interviewRoutes);
 app.use("/api/resume", resumeRoutes);
 app.use("/api/problems", problemRoutes);
+
+// Centralized Global Error Handler Middleware
+app.use(errorHandler);
 
 app.get("/health", (req, res) => {
   res.status(200).json({ msg: "api is up and running" });

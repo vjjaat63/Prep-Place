@@ -45,8 +45,8 @@ function DashboardPage() {
   const isUserInSession = (session) => {
     if (!user.id) return false;
 
-    const hostId = session.host?.clerkId || session.host?._id;
-    const participantId = session.participant?.clerkId || session.participant?._id;
+    const hostId = session.host?.streamUserId || session.host?._id;
+    const participantId = session.participant?.streamUserId || session.participant?._id;
 
     return hostId === user.id || participantId === user.id;
   };

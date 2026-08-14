@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
       const dbUser = response.data;
       
       setUser({
-        id: dbUser.clerkId || dbUser._id, // clerkId maintains compatibility with existing Stream chat/video data
+        id: dbUser.streamUserId || dbUser._id, // Unique UUID mapping used as the Stream SDK user identity
         _id: dbUser._id,
         firstName: dbUser.name ? dbUser.name.split(" ")[0] : "",
         fullName: dbUser.name,
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       setUser({
-        id: dbUser.clerkId || dbUser._id,
+        id: dbUser.streamUserId || dbUser._id,
         _id: dbUser._id,
         firstName: dbUser.name ? dbUser.name.split(" ")[0] : "",
         fullName: dbUser.name,
@@ -88,7 +88,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       setUser({
-        id: dbUser.clerkId || dbUser._id,
+        id: dbUser.streamUserId || dbUser._id,
         _id: dbUser._id,
         firstName: dbUser.name ? dbUser.name.split(" ")[0] : "",
         fullName: dbUser.name,
@@ -133,7 +133,7 @@ export const AuthProvider = ({ children }) => {
       const response = await axiosInstance.put("/auth/profile", data);
       const dbUser = response.data;
       setUser({
-        id: dbUser.clerkId || dbUser._id,
+        id: dbUser.streamUserId || dbUser._id,
         _id: dbUser._id,
         firstName: dbUser.name ? dbUser.name.split(" ")[0] : "",
         fullName: dbUser.name,

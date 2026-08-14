@@ -20,17 +20,17 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: function () {
-        // Password required only for local email/password users without clerkId or OAuth IDs
-        return !this.clerkId && !this.googleId && !this.githubId;
+        // Password required only for local email/password registration (not for Google/GitHub OAuth)
+        return this.provider === "local" && !this.googleId && !this.githubId;
       },
     },
     profileImage: {
       type: String,
       default: "",
     },
-    clerkId: {
+    streamUserId: {
       type: String,
-      // Allowed for compatibility with Stream and existing Clerk users
+      // Unique UUID mapping used as the Stream SDK video call & chat user identity
     },
     googleId: {
       type: String,
@@ -44,7 +44,7 @@ const userSchema = new mongoose.Schema(
     },
     provider: {
       type: String,
-      enum: ["local", "google", "github", "clerk"],
+      enum: ["local", "google", "github"],
       default: "local",
     },
     isVerified: {

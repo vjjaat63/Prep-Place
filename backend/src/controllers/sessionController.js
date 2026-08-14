@@ -5,7 +5,7 @@ export async function createSession(req, res) {
   try {
     const { problem, difficulty, password } = req.body;
     const userId = req.user._id;
-    const streamId = req.user.clerkId || req.user._id.toString();
+    const streamId = (req.user.streamUserId || req.user._id).toString();
 
     if (!problem || !difficulty) {
       return res.status(400).json({ message: "Problem and difficulty are required" });
@@ -51,8 +51,8 @@ export async function createSession(req, res) {
 export async function getActiveSessions(_, res) {
   try {
     const sessions = await Session.find({ status: "active" })
-      .populate("host", "name profileImage email clerkId")
-      .populate("participant", "name profileImage email clerkId")
+      .populate("host", "name profileImage email streamUserId")
+      .populate("participant", "name profileImage email streamUserId")
       .sort({ createdAt: -1 })
       .limit(20);
 
@@ -87,8 +87,8 @@ export async function getSessionById(req, res) {
     const { id } = req.params;
 
     const session = await Session.findById(id)
-      .populate("host", "name email profileImage clerkId")
-      .populate("participant", "name email profileImage clerkId");
+      .populate("host", "name email profileImage streamUserId")
+      .populate("participant", "name email profileImage streamUserId");
 
     if (!session) return res.status(404).json({ message: "Session not found" });
 
@@ -104,7 +104,7 @@ export async function joinSession(req, res) {
     const { id } = req.params;
     const { password } = req.body;
     const userId = req.user._id;
-    const streamId = req.user.clerkId || req.user._id.toString();
+    const streamId = (req.user.streamUserId || req.user._id).toString();
 
     const session = await Session.findById(id);
 
