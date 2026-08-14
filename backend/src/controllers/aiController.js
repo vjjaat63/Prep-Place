@@ -70,9 +70,14 @@ RETURN EXACTLY ONE VALID JSON OBJECT AND NOTHING ELSE. DO NOT WRAP IN MARKDOWN B
       return res.status(500).json({ message: "Invalid response format from Gemini API" });
     }
 
+    let cleanedText = reviewText.trim();
+    if (cleanedText.startsWith("```")) {
+      cleanedText = cleanedText.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "").trim();
+    }
+
     let parsedReview;
     try {
-      parsedReview = JSON.parse(reviewText);
+      parsedReview = JSON.parse(cleanedText);
     } catch (e) {
       console.warn("Failed to parse Gemini response as JSON, falling back to raw text", e);
       parsedReview = { rawText: reviewText };

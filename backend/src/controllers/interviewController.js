@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { generateWithFallback } from "../lib/gemini.js";
 import Interview from "../models/Interview.js";
 import Topic from "../models/Topic.js";
@@ -57,6 +58,10 @@ export const continueInterview = async (req, res) => {
     const { id } = req.params;
     const { message } = req.body;
 
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid interview ID format" });
+    }
+
     const interview = await Interview.findById(id);
 
     if (!interview) {
@@ -103,6 +108,11 @@ export const continueInterview = async (req, res) => {
 export const endInterview = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid interview ID format" });
+    }
+
     const interview = await Interview.findById(id);
 
     if (!interview) return res.status(404).json({ message: "Interview not found" });
@@ -196,7 +206,13 @@ export const getInterviewHistory = async (req, res) => {
 
 export const getInterviewById = async (req, res) => {
   try {
-    const interview = await Interview.findById(req.params.id);
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid interview ID format" });
+    }
+
+    const interview = await Interview.findById(id);
     if (!interview) return res.status(404).json({ message: "Interview not found" });
     if (interview.userId.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Unauthorized" });
 
@@ -209,7 +225,13 @@ export const getInterviewById = async (req, res) => {
 
 export const deleteInterview = async (req, res) => {
   try {
-    const interview = await Interview.findById(req.params.id);
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid interview ID format" });
+    }
+
+    const interview = await Interview.findById(id);
     if (!interview) return res.status(404).json({ message: "Interview not found" });
     if (interview.userId.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Unauthorized" });
 

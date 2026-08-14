@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { chatClient, streamClient } from "../lib/stream.js";
 import Session from "../models/Session.js";
 
@@ -86,6 +87,10 @@ export async function getSessionById(req, res) {
   try {
     const { id } = req.params;
 
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid session ID format" });
+    }
+
     const session = await Session.findById(id)
       .populate("host", "name email profileImage streamUserId")
       .populate("participant", "name email profileImage streamUserId");
@@ -105,6 +110,10 @@ export async function joinSession(req, res) {
     const { password } = req.body;
     const userId = req.user._id;
     const streamId = (req.user.streamUserId || req.user._id).toString();
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid session ID format" });
+    }
 
     const session = await Session.findById(id);
 
@@ -149,6 +158,10 @@ export async function endSession(req, res) {
   try {
     const { id } = req.params;
     const userId = req.user._id;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid session ID format" });
+    }
 
     const session = await Session.findById(id);
 

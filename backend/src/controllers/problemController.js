@@ -117,7 +117,7 @@ export const getProblemById = async (req, res) => {
  * POST /api/problems
  * Create a new problem (Admin Only)
  */
-export const createProblem = async (req, res) => {
+export const createProblem = async (req, res, next) => {
   try {
     const problemData = req.body;
     if (!problemData.problemId || !problemData.title || !problemData.difficulty) {
@@ -136,7 +136,7 @@ export const createProblem = async (req, res) => {
     return res.status(201).json(newProblem);
   } catch (error) {
     console.error("Error in createProblem:", error.message);
-    return res.status(500).json({ message: "Failed to create problem." });
+    next(error);
   }
 };
 
@@ -144,7 +144,7 @@ export const createProblem = async (req, res) => {
  * PUT /api/problems/:id
  * Update an existing problem (Admin Only)
  */
-export const updateProblem = async (req, res) => {
+export const updateProblem = async (req, res, next) => {
   try {
     const { id } = req.params;
     const isObjectId = mongoose.isValidObjectId(id);
@@ -167,7 +167,7 @@ export const updateProblem = async (req, res) => {
     return res.json(updatedProblem);
   } catch (error) {
     console.error("Error in updateProblem:", error.message);
-    return res.status(500).json({ message: "Failed to update problem." });
+    next(error);
   }
 };
 
