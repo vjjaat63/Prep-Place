@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { createInterview, getInterviewTopics, addInterviewTopic, deleteInterviewTopic } from "../api/interview";
@@ -10,15 +10,39 @@ import Navbar from "../components/Navbar";
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
 const DURATIONS = [10, 15, 30, 45]; // in minutes
 
+const DOMAINS = ["Core Subjects", "Programming Languages", "Applied Tech", "HR & Soft Skills", "All Topics"];
+
 const DEFAULT_CATEGORIES = [
-  "Data Structures & Algorithms",
-  "Object Oriented Programming",
-  "Database Management Systems",
-  "Operating Systems",
-  "Computer Networks",
-  "System Design",
-  "Machine Learning",
-  "HR Interview",
+  // Core Subjects
+  { name: "Data Structures & Algorithms", domain: "Core Subjects" },
+  { name: "Object Oriented Programming", domain: "Core Subjects" },
+  { name: "Database Management Systems", domain: "Core Subjects" },
+  { name: "Operating Systems", domain: "Core Subjects" },
+  { name: "Computer Networks", domain: "Core Subjects" },
+  { name: "System Design", domain: "Core Subjects" },
+  { name: "Software Engineering & Agile", domain: "Core Subjects" },
+  { name: "Cyber Security Fundamentals", domain: "Core Subjects" },
+  { name: "Theory of Computation & Compilers", domain: "Core Subjects" },
+  { name: "Distributed Systems", domain: "Core Subjects" },
+
+  // Programming Languages
+  { name: "Java & JVM", domain: "Programming Languages" },
+  { name: "Python", domain: "Programming Languages" },
+  { name: "C++ & Modern Features", domain: "Programming Languages" },
+  { name: "JavaScript & TypeScript", domain: "Programming Languages" },
+  { name: "C# & .NET", domain: "Programming Languages" },
+  { name: "Go (Golang)", domain: "Programming Languages" },
+  { name: "Rust", domain: "Programming Languages" },
+
+  // Applied Tech
+  { name: "Machine Learning & AI", domain: "Applied Tech" },
+  { name: "Generative AI & LLMs", domain: "Applied Tech" },
+  { name: "Cloud Computing & DevOps", domain: "Applied Tech" },
+  { name: "Full-Stack Web Development", domain: "Applied Tech" },
+
+  // HR & Soft Skills
+  { name: "HR Interview", domain: "HR & Soft Skills" },
+  { name: "Behavioral & Leadership", domain: "HR & Soft Skills" },
 ];
 
 const InterviewFormPage = () => {
@@ -27,16 +51,19 @@ const InterviewFormPage = () => {
   const { user } = useUser();
   const isAdmin = user?.role === "admin";
 
+  const [selectedDomains, setSelectedDomains] = useState(["Core Subjects"]);
+  const [selectedCategories, setSelectedCategories] = useState(["Data Structures & Algorithms"]);
   const [formData, setFormData] = useState({
-    category: DEFAULT_CATEGORIES[0],
     difficulty: "Medium",
     duration: 30,
     mode: "Text",
+    questionFormat: "Conversational",
   });
 
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [newTopicName, setNewTopicName] = useState("");
   const [newTopicDesc, setNewTopicDesc] = useState("");
+  const [newTopicDomain, setNewTopicDomain] = useState("Core Subjects");
 
   // Fetch topics dynamically from database
   const { data: topicsData, isLoading: isLoadingTopics } = useQuery({
@@ -44,16 +71,57 @@ const InterviewFormPage = () => {
     queryFn: getInterviewTopics,
   });
 
-  const categories = Array.isArray(topicsData) && topicsData.length > 0
-    ? topicsData.map((t) => t.name)
+  const allTopicsList = Array.isArray(topicsData) && topicsData.length > 0
+    ? topicsData
     : DEFAULT_CATEGORIES;
 
-  // Set initial category once topics are loaded
-  useEffect(() => {
-    if (categories.length > 0 && !categories.includes(formData.category)) {
-      setFormData((prev) => ({ ...prev, category: categories[0] }));
+  // Filter topics based on selected Domains
+  const filteredTopics = allTopicsList.filter((t) => {
+    if (selectedDomains.includes("All Topics")) return true;
+    return selectedDomains.includes(t.domain || "Core Subjects");
+  });
+
+  const categories = filteredTopics.map((t) => typeof t === "string" ? t : t.name);
+
+  // Toggle domain in selectedDomains array
+  const handleToggleDomain = (domain) => {
+    if (domain === "All Topics") {
+      setSelectedDomains(["All Topics"]);
+      return;
     }
-  }, [topicsData]);
+
+    setSelectedDomains((prev) => {
+      let next = prev.filter((d) => d !== "All Topics");
+      if (next.includes(domain)) {
+        next = next.filter((d) => d !== domain);
+      } else {
+        next = [...next, domain];
+      }
+      return next.length === 0 ? ["Core Subjects"] : next;
+    });
+  };
+
+  // Toggle category in selectedCategories array
+  const handleToggleCategory = (categoryName) => {
+    setSelectedCategories((prev) => {
+      if (prev.includes(categoryName)) {
+        const next = prev.filter((c) => c !== categoryName);
+        return next.length === 0 ? [categoryName] : next;
+      } else {
+        return [...prev, categoryName];
+      }
+    });
+  };
+
+  const handleSelectAllFiltered = () => {
+    setSelectedCategories(categories);
+  };
+
+  const handleClearSelected = () => {
+    if (categories.length > 0) {
+      setSelectedCategories([categories[0]]);
+    }
+  };
 
   // Start interview mutation
   const { mutate: startInterview, isPending } = useMutation({
@@ -75,7 +143,7 @@ const InterviewFormPage = () => {
       setNewTopicName("");
       setNewTopicDesc("");
       setShowAdminModal(false);
-      setFormData((prev) => ({ ...prev, category: newTopic.name }));
+      setSelectedCategories((prev) => [...prev, newTopic.name]);
       queryClient.invalidateQueries(["interviewTopics"]);
     },
     onError: (error) => {
@@ -97,10 +165,14 @@ const InterviewFormPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.category) {
-      return toast.error("Please select an interview topic.");
+    if (selectedCategories.length === 0) {
+      return toast.error("Please select at least one interview topic.");
     }
-    startInterview(formData);
+    startInterview({
+      ...formData,
+      categories: selectedCategories,
+      category: selectedCategories.join(", "),
+    });
   };
 
   const handleAddTopicSubmit = (e) => {
@@ -108,7 +180,7 @@ const InterviewFormPage = () => {
     if (!newTopicName.trim()) {
       return toast.error("Please enter a topic name.");
     }
-    createTopic({ name: newTopicName, description: newTopicDesc });
+    createTopic({ name: newTopicName, description: newTopicDesc, domain: newTopicDomain });
   };
 
   return (
@@ -120,25 +192,69 @@ const InterviewFormPage = () => {
             <Brain className="w-12 h-12 text-primary" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Set Up Your Mock Interview</h1>
-          <p className="text-gray-500">Customize your session parameters before we begin.</p>
+          <p className="text-gray-500">Select multiple domains, mix & match topics, choose your interview format and settings.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-base-100 p-8 rounded-2xl shadow-xl border border-base-200">
 
-          {/* Category Selection + Admin Add Option */}
+          {/* 1. MULTI-DOMAIN SELECTION */}
           <div className="form-control w-full mb-6">
             <div className="flex justify-between items-center mb-2">
-              <label className="label-text font-semibold text-lg">Interview Topic</label>
-              {isAdmin && (
+              <label className="label-text font-semibold text-lg">Select Domains (Multi-Select)</label>
+              <span className="text-xs text-gray-400">Click to toggle domains</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {DOMAINS.map((domain) => {
+                const isActive = selectedDomains.includes(domain);
+                return (
+                  <button
+                    key={domain}
+                    type="button"
+                    onClick={() => handleToggleDomain(domain)}
+                    className={`btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline'}`}
+                  >
+                    {isActive ? `✓ ${domain}` : domain}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2. MULTI-TOPIC SELECTION */}
+          <div className="form-control w-full mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center gap-2">
+                <label className="label-text font-semibold text-lg">Interview Topics</label>
+                <span className="badge badge-primary badge-sm font-semibold">
+                  {selectedCategories.length} selected
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowAdminModal(true)}
-                  className="btn btn-xs btn-outline btn-primary gap-1"
+                  onClick={handleSelectAllFiltered}
+                  className="btn btn-xs btn-ghost text-primary"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add Topic
+                  Select All
                 </button>
-              )}
+                <button
+                  type="button"
+                  onClick={handleClearSelected}
+                  className="btn btn-xs btn-ghost text-gray-400"
+                >
+                  Reset
+                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminModal(true)}
+                    className="btn btn-xs btn-outline btn-primary gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add Topic
+                  </button>
+                )}
+              </div>
             </div>
 
             {isLoadingTopics ? (
@@ -146,16 +262,54 @@ const InterviewFormPage = () => {
                 <Loader className="w-4 h-4 animate-spin text-primary" /> Loading interview topics...
               </div>
             ) : (
-              <select
-                className="select select-bordered w-full text-base"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              >
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+              <div className="bg-base-200/50 p-4 rounded-xl border border-base-300 max-h-56 overflow-y-auto flex flex-wrap gap-2">
+                {categories.map((cat) => {
+                  const isSelected = selectedCategories.includes(cat);
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => handleToggleCategory(cat)}
+                      className={`btn btn-sm text-xs h-auto py-2 px-3 text-left justify-start ${
+                        isSelected
+                          ? "btn-primary font-bold shadow-sm"
+                          : "btn-ghost bg-base-100 hover:bg-base-200 border-base-300 text-base-content"
+                      }`}
+                    >
+                      <span>{isSelected ? "✓ " : "+ "}{cat}</span>
+                    </button>
+                  );
+                })}
+              </div>
             )}
+          </div>
+
+          {/* 2. QUESTION FORMAT: Conversational vs MCQs */}
+          <div className="form-control w-full mb-6">
+            <label className="label">
+              <span className="label-text font-semibold text-lg">Interview Question Format</span>
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, questionFormat: "Conversational" })}
+                className={`btn flex flex-col items-center justify-center py-6 h-auto ${formData.questionFormat === "Conversational" ? 'btn-primary' : 'btn-outline'}`}
+              >
+                <span className="font-bold text-base">Conversational (Q&A)</span>
+                <span className="text-xs opacity-80 mt-1">Interactive dialogue with AI</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, questionFormat: "MCQ" })}
+                className={`btn flex flex-col items-center justify-center py-6 h-auto ${formData.questionFormat === "MCQ" ? 'btn-primary' : 'btn-outline'}`}
+              >
+                <span className="font-bold text-base flex items-center gap-1.5">
+                  MCQs (Multiple Choice)
+                  <span className="badge badge-xs badge-secondary">New</span>
+                </span>
+                <span className="text-xs opacity-80 mt-1">4-option structured quiz</span>
+              </button>
+            </div>
           </div>
 
           {/* Difficulty */}
@@ -199,7 +353,7 @@ const InterviewFormPage = () => {
           {/* Mode */}
           <div className="form-control w-full mb-8">
             <label className="label">
-              <span className="label-text font-semibold text-lg">Interview Mode</span>
+              <span className="label-text font-semibold text-lg">Input Mode</span>
             </label>
             <div className="flex gap-4">
               <button
@@ -266,6 +420,19 @@ const InterviewFormPage = () => {
                     onChange={(e) => setNewTopicName(e.target.value)}
                     required
                   />
+                </div>
+                <div>
+                  <label className="label font-medium text-sm">Topic Domain *</label>
+                  <select
+                    className="select select-bordered w-full"
+                    value={newTopicDomain}
+                    onChange={(e) => setNewTopicDomain(e.target.value)}
+                  >
+                    <option value="Core Subjects">Core Subjects</option>
+                    <option value="Programming Languages">Programming Languages</option>
+                    <option value="Applied Tech">Applied Tech</option>
+                    <option value="HR & Soft Skills">HR & Soft Skills</option>
+                  </select>
                 </div>
                 <div>
                   <label className="label font-medium text-sm">Description (Optional)</label>

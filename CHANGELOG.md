@@ -115,8 +115,15 @@ All notable changes and git commits to the **Prep Place** project, ordered chron
 
 ---
 
-## [1.5.2] - 2026-08-14 (Latest Version - Centralized Error Handling, Stream ID Refactoring & Naming Audit)
+## [1.5.2] - 2026-08-14 (Centralized Error Handling, Stream ID Refactoring & Naming Audit)
 
 - `REFACTOR` - Refactored legacy `clerkId` references across backend models, controllers, frontend contexts, and pages to `streamUserId` for Stream SDK user mapping. Created centralized global error handling middleware (`errorHandler.js`) in Express to format Mongoose validation errors, duplicate key errors (code 11000), and CastErrors cleanly into HTTP 400 Bad Request JSON responses. Standardized backend route file naming (`chatRoutes.js` -> `chatRoute.js`) and updated root `package.json` name to `prep-place`. Reverified all documentation files (`docs/05_database_design.md`, `CHANGELOG.md`, `README.md`) for 100% consistency.
+
+---
+
+## [1.5.3] - 2026-08-15 (Standardized Input Validation via `validator` Library)
+
+- `c23bdcd` - Refactored email and password input validation across backend schemas and controllers to use the production-standard `validator` library. Replaced custom regular expressions with `validator.isEmail()` and `validator.isStrongPassword()`, enforcing RFC 5322 compliance and mitigating ReDoS (Regular Expression Denial of Service) vulnerabilities. Updated `User.js`, `authController.js`, `backend/package.json`, `docs/05_database_design.md`, `docs/14_technologies_used.md`, and `CHANGELOG.md`.
+
 
 

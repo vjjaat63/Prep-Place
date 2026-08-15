@@ -63,7 +63,14 @@ const InterviewDashboardPage = () => {
             <div key={interview._id} className="card bg-base-100 shadow-xl border border-base-200 hover:shadow-2xl transition-all">
               <div className="card-body">
                 <div className="flex justify-between items-start mb-2">
-                  <h2 className="card-title text-lg font-bold">{interview.category}</h2>
+                  <div>
+                    <h2 className="card-title text-lg font-bold">{interview.category}</h2>
+                    {interview.questionFormat && (
+                      <span className={`badge ${interview.questionFormat === 'MCQ' ? 'badge-secondary' : 'badge-ghost'} badge-sm mt-1`}>
+                        {interview.questionFormat === 'MCQ' ? 'MCQ Quiz' : 'Conversational'}
+                      </span>
+                    )}
+                  </div>
                   <div className={`badge ${
                     interview.difficulty === 'Easy' ? 'badge-success' :
                     interview.difficulty === 'Medium' ? 'badge-warning' : 'badge-error'

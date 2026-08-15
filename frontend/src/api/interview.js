@@ -45,3 +45,13 @@ export const deleteInterviewTopic = async (id) => {
   return res.data;
 };
 
+export const getMCQState = async (id) => {
+  const res = await axiosInstance.get(`/interviews/${id}/mcq`);
+  return res.data;
+};
+
+export const submitMCQAnswer = async (id, questionId, selectedOption) => {
+  const res = await axiosInstance.post(`/interviews/${id}/mcq/answer`, { questionId, selectedOption });
+  return res.data;
+};
+

@@ -8,7 +8,9 @@ import {
   deleteInterview,
   getInterviewTopics,
   addInterviewTopic,
-  deleteInterviewTopic
+  deleteInterviewTopic,
+  getMCQState,
+  submitMCQAnswer,
 } from "../controllers/interviewController.js";
 import { protectRoute } from "../middleware/protectRoute.js";
 import { requireAdmin } from "../middleware/adminMiddleware.js";
@@ -20,6 +22,10 @@ const router = express.Router();
 router.get("/topics", protectRoute, getInterviewTopics);
 router.post("/topics", protectRoute, requireAdmin, addInterviewTopic);
 router.delete("/topics/:id", protectRoute, requireAdmin, deleteInterviewTopic);
+
+// MCQ Specific Endpoints
+router.get("/:id/mcq", protectRoute, getMCQState);
+router.post("/:id/mcq/answer", protectRoute, submitMCQAnswer);
 
 // Interview Endpoints
 router.post("/", protectRoute, aiRateLimiter, createInterview);

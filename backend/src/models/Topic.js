@@ -25,6 +25,11 @@ const topicSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    domain: {
+      type: String,
+      enum: ["Core Subjects", "Programming Languages", "Applied Tech", "HR & Soft Skills"],
+      default: "Core Subjects",
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

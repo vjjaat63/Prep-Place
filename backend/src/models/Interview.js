@@ -18,6 +18,16 @@ const messageSchema = new mongoose.Schema({
   },
 });
 
+const mcqQuestionSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  question: { type: String, required: true },
+  options: [{ type: String }],
+  correctOption: { type: String, required: true },
+  explanation: { type: String, default: "" },
+  userAnswer: { type: String, default: "" },
+  isCorrect: { type: Boolean, default: null },
+});
+
 const interviewSchema = new mongoose.Schema(
   {
     userId: {
@@ -30,8 +40,9 @@ const interviewSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      maxlength: [100, "Category cannot exceed 100 characters"],
+      maxlength: [500, "Category cannot exceed 500 characters"],
     },
+    categories: [{ type: String }],
     difficulty: {
       type: String,
       enum: ["Easy", "Medium", "Hard"],
@@ -51,6 +62,12 @@ const interviewSchema = new mongoose.Schema(
       enum: ["Text", "Audio"],
       default: "Text",
     },
+    questionFormat: {
+      type: String,
+      enum: ["Conversational", "MCQ"],
+      default: "Conversational",
+    },
+    mcqQuestions: [mcqQuestionSchema],
     conversation: [messageSchema],
     score: {
       overall: Number,
