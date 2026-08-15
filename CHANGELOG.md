@@ -125,5 +125,11 @@ All notable changes and git commits to the **Prep Place** project, ordered chron
 
 - `c23bdcd` - Refactored email and password input validation across backend schemas and controllers to use the production-standard `validator` library. Replaced custom regular expressions with `validator.isEmail()` and `validator.isStrongPassword()`, enforcing RFC 5322 compliance and mitigating ReDoS (Regular Expression Denial of Service) vulnerabilities. Updated `User.js`, `authController.js`, `backend/package.json`, `docs/05_database_design.md`, `docs/14_technologies_used.md`, and `CHANGELOG.md`.
 
+---
+
+## [2.4.0] - 2026-08-15 (Redis-Buffered MCQ System, Multi-Domain Mocks & Homepage Overhaul)
+
+- `80fb678` - Added Redis MCQ session caching (`mcqStore.js`) with a 2-hour TTL (`EX 7200`) and 10-item look-ahead background pre-fetching ($N-2$ threshold). Implemented multi-domain (`Core Subjects`, `Programming Languages`, `Applied Tech`, `HR`) and multi-topic checkable pill selection (`InterviewFormPage.jsx`). Added FAANG/MAANG real-world question prompting engine, Skip Question functionality with `"SKIPPED"` state recording, and targeted post-interview report cards. Applied Mongoose `.lean()` query optimizations, atomic single-query deletes, centralized `cleanJsonText` helper, and overhauled `HomePage.jsx` with a modern Bento Grid showcase and `v2.4.0` version badge. Updated all project documentation (`docs/01` - `docs/15`, `README.md`, `CHANGELOG.md`).
+
 
 

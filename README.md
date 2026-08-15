@@ -37,8 +37,8 @@ Technical interviews are stressful, and preparing for them often requires juggli
 
 ## 🌟 Features
 
-- **Collaborative Coding & Video Interviews**
-  Conduct seamless 1-on-1 interviews with integrated Stream SDK video, audio, and text chat, alongside a real-time synchronized Monaco Editor.
+- **AI Mock Interviewer & MCQ Quiz System**
+  Practice technical interviews matching FAANG/MAANG standards in both **Conversational (Q&A)** and **MCQs (Multiple Choice)** formats. Supports **Multi-Domain** selection (`Core Subjects`, `Programming Languages`, `Applied Tech`, `HR & Soft Skills`), continuous MCQ streaming backed by a **2-Hour Redis TTL Cache** with $N-2$ look-ahead pre-fetching, **Skip Question** functionality, and targeted post-interview report cards with wrong-answer explanations. Supports Text and Voice AI modes.
 - **Secure Code Execution**
   Compile and run code securely in multiple languages. Execution requests are safely proxied through the backend to the JDoodle API, preventing credential exposure.
 - **Intelligent AI Code Reviews**

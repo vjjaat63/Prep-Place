@@ -27,9 +27,9 @@ function App() {
   return (
     <>
       <Routes>
-        <Route path="/" element={!isSignedIn ? <HomePage /> : <Navigate to={"/dashboard"} />} />
-        <Route path="/login" element={!isSignedIn ? <LoginPage /> : <Navigate to={"/dashboard"} />} />
-        <Route path="/signup" element={!isSignedIn ? <SignupPage /> : <Navigate to={"/dashboard"} />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={!isSignedIn ? <LoginPage /> : <Navigate to={"/"} />} />
+        <Route path="/signup" element={!isSignedIn ? <SignupPage /> : <Navigate to={"/"} />} />
         <Route path="/verify-email" element={!isSignedIn ? <VerifyEmailPage /> : <Navigate to={"/dashboard"} />} />
         <Route path="/auth/callback" element={<OAuthCallbackPage />} />
 
@@ -44,7 +44,7 @@ function App() {
         <Route path="/interviews/new" element={isSignedIn ? <InterviewFormPage /> : <Navigate to={"/"} />} />
         <Route path="/interviews/session/:id" element={isSignedIn ? <InterviewSessionPage /> : <Navigate to={"/"} />} />
         <Route path="/interviews/summary/:id" element={isSignedIn ? <InterviewSummaryPage /> : <Navigate to={"/"} />} />
-        
+
         <Route path="/resume" element={isSignedIn ? <ResumeDashboardPage /> : <Navigate to={"/"} />} />
         <Route path="/resume/report/:id" element={isSignedIn ? <ResumeReportPage /> : <Navigate to={"/"} />} />
       </Routes>

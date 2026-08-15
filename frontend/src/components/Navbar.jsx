@@ -21,9 +21,14 @@ function Navbar() {
           </div>
 
           <div className="flex flex-col">
-            <span className="font-black text-xl bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent font-mono tracking-wider">
-              Prep Place
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-black text-xl bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent font-mono tracking-wider">
+                Prep Place
+              </span>
+              <span className="badge badge-xs bg-gradient-to-r from-primary to-secondary text-white font-mono border-none px-1.5 py-0.5 shadow-sm">
+                v2.4.0
+              </span>
+            </div>
             <span className="text-xs text-base-content/60 font-medium -mt-1">Code Together</span>
           </div>
         </Link>
@@ -33,10 +38,9 @@ function Navbar() {
           <Link
             to={"/problems"}
             className={`px-4 py-2.5 rounded-lg transition-all duration-200 
-              ${
-                isActive("/problems")
-                  ? "bg-primary text-primary-content"
-                  : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
+              ${isActive("/problems")
+                ? "bg-primary text-primary-content"
+                : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
               }
               
               `}
@@ -51,10 +55,9 @@ function Navbar() {
           <Link
             to={"/interviews"}
             className={`px-4 py-2.5 rounded-lg transition-all duration-200 
-              ${
-                isActive("/interviews")
-                  ? "bg-primary text-primary-content"
-                  : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
+              ${isActive("/interviews")
+                ? "bg-primary text-primary-content"
+                : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
               }
               `}
           >
@@ -68,10 +71,9 @@ function Navbar() {
           <Link
             to={"/resume"}
             className={`px-4 py-2.5 rounded-lg transition-all duration-200 
-              ${
-                isActive("/resume")
-                  ? "bg-primary text-primary-content"
-                  : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
+              ${isActive("/resume")
+                ? "bg-primary text-primary-content"
+                : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
               }
               `}
           >
@@ -85,10 +87,9 @@ function Navbar() {
           <Link
             to={"/dashboard"}
             className={`px-4 py-2.5 rounded-lg transition-all duration-200 
-              ${
-                isActive("/dashboard")
-                  ? "bg-primary text-primary-content"
-                  : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
+              ${isActive("/dashboard")
+                ? "bg-primary text-primary-content"
+                : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
               }
               
               `}
@@ -105,11 +106,10 @@ function Navbar() {
                 <div
                   tabIndex={0}
                   role="button"
-                  className={`btn btn-ghost btn-circle avatar p-[2px] transition-all duration-300 ${
-                    user.role === "admin"
+                  className={`btn btn-ghost btn-circle avatar p-[2px] transition-all duration-300 ${user.role === "admin"
                       ? "bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600 shadow-[0_0_12px_rgba(236,72,153,0.5)] hover:scale-105"
                       : "border border-base-300"
-                  }`}
+                    }`}
                 >
                   <div className="w-10 rounded-full overflow-hidden bg-base-200">
                     <img alt="User avatar" src={user.imageUrl} />
